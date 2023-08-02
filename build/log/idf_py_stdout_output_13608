@@ -1,0 +1,18 @@
+[0/1] Re-running CMake...
+-- ccache will be used for faster recompilation
+-- Project is not inside a git repository, or git repository has no commits; will not use 'git describe' to determine PROJECT_VER.
+-- Building ESP-IDF components for target esp32s3
+-- Checking Python dependencies...
+Constraint file: C:\Espressif\espidf.constraints.v5.0.txt
+Requirement files:
+ - C:\Users\enriq\ESP-IDF\esp-idf-v5.0.2\tools\requirements\requirements.core.txt
+Python being checked: C:\Users\enriq\.espressif\python_env\idf5.0_py3.11_env\Scripts\python.exe
+Python requirements are satisfied.
+Processing 2 dependencies:
+[1/2] espressif/led_strip (2.3.2)
+[2/2] idf (5.0.2)
+-- Project sdkconfig file C:/Users/enriq/eclipse-workspace/HoCoSys/sdkconfig
+-- Configuring incomplete, errors occurred!
+See also "C:/Users/enriq/eclipse-workspace/HoCoSys/build/CMakeFiles/CMakeOutput.log".
+FAILED: build.ninja 
+C:\Users\enriq\.espressif\tools\cmake\3.24.0\bin\cmake.exe --regenerate-during-build -SC:\Users\enriq\eclipse-workspace\HoCoSys -BC:\Users\enriq\eclipse-workspace\HoCoSys\build

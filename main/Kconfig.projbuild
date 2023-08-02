@@ -1,0 +1,194 @@
+# put here your custom config value
+menu "HoCoSys Configuration"
+    orsource "$IDF_PATH/examples/common_components/env_caps/$IDF_TARGET/Kconfig.env_caps"
+
+config WIFI
+	bool "WiFi"
+	default n
+
+	menu "Wi-Fi"
+	if WIFI	
+	config ESP_WIFI_SSID
+	    string "WiFi SSID" if WIFI
+	    default "myssid" if WIFI
+	    help
+		SSID (network name) for the example to connect to.
+	
+	config ESP_WIFI_PASSWORD
+	    string "WiFi Password" if WIFI
+	    default "mypassword" if WIFI
+	    help
+		WiFi password (WPA or WPA2) for the example to use.
+	endif
+	endmenu
+
+choice BLINK_LED
+    prompt "Blink LED type"
+    default BLINK_LED_GPIO if IDF_TARGET_ESP32 || IDF_TARGET_ESP32C2
+    default BLINK_LED_RMT
+    help
+        Defines the default peripheral for blink example
+
+    config BLINK_LED_GPIO
+        bool "GPIO"
+    config BLINK_LED_RMT
+        bool "RMT - Addressable LED"
+endchoice
+
+config BLINK_GPIO
+    int "Blink GPIO number"
+    range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+    default 8 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32H2 || IDF_TARGET_ESP32C2
+    default 18 if IDF_TARGET_ESP32S2
+    default 48 if IDF_TARGET_ESP32S3
+    default 5
+    help
+        GPIO number (IOxx) to blink on and off or the RMT signal for the addressable LED.
+        Some GPIOs are used for other purposes (flash connections, etc.) and cannot be used to blink.
+
+config BLINK_PERIOD
+    int "Blink period in ms"
+    range 10 3600000
+    default 1000
+    help
+        Define the blinking period in milliseconds.
+
+config OutputsConfig
+	bool "OutputCfg"
+	default y
+	
+    menu "Outputs"
+    	if OutputsConfig
+		config GPIO_OUT_TrillerDirection
+			int "GPIO output TrillerDirection"
+			range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+			default 18 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32S3
+			default 8 if IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
+			help
+		    	GPIO pin number to be used as output for Triller Direction.
+		
+		config GPIO_OUT_TrillerSpeed
+		    int "GPIO output Triller Activation"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_OUT_RANGE_MAX
+		    default 19 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32S3
+		    default 9 if IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
+		    help
+		        GPIO pin number to be used asoutput for Triller Speed
+		
+		config GPIO_OUT_FanDirection
+		    int "GPIO output fan direction"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 5
+		    help
+		        GPIO pin number to be used as output for Fan direction.
+		
+		config GPIO_OUT_FanSpeed
+		    int "GPIO output fan speed"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 6
+		    help
+		        GPIO pin number to be used as output for Fan speed.
+		        
+		config GPIO_OUT_GREEN_LED
+		    int "GPIO output green LED"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 10
+		    help
+		        GPIO pin number to be used as output for green LED.
+		
+		config GPIO_OUT_RED_LED
+		    int "GPIO output red LED"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 12
+		    help
+		        GPIO pin number to be used as output for red LED.
+		
+		config GPIO_OUT_BLUE_LED
+		    int "GPIO output blue LED"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 11
+		    help
+		        GPIO pin number to be used as output for blue LED.        
+		
+		config GPIO_OUT_BUZZER
+		    int "GPIO output buzzer"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 13
+		    help
+		        GPIO pin number to be used as output for buzzer.
+		
+		config GPIO_OUTPUT_Resistor
+		    int "GPIO output Resistor PWM"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 14
+		    help
+		        GPIO pin number to be used as output for resistor PWM.
+		
+		config GPIO_OUTPUT_Sprinkler
+		    int "GPIO output sprinker"
+		    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+		    default 15
+		    help
+		        GPIO pin number to be used as output for sprinker pump.
+    endif
+    endmenu
+        
+config InputsConfig
+	bool "InputCfg"
+	default y
+	
+	menu "Inputs"
+	if InputsConfig	
+	config GPIO_IN_MillerActButton
+	    int "GPIO input Miller activation button"
+	    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+	    default 7
+	    help
+	        GPIO pin number to be used as input for Miller activation button.
+	       
+	config GPIO_IN_Door
+	    int "GPIO input Door close switch"
+	    range ENV_GPIO_RANGE_MIN ENV_GPIO_IN_RANGE_MAX
+	    default 8
+	    help
+	        GPIO pin number to be used as input for Door switch sensor.
+	endif
+	endmenu
+	
+config I2CMaster
+   bool "I2C Master"
+   default y
+	
+    menu "I2C Master"
+	if I2CMaster
+    config I2C_MASTER_SCL
+       int "SCL GPIO Num"
+       default 6 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
+       default 2 if  IDF_TARGET_ESP32S3
+       default 19 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2
+       help
+           GPIO number for I2C Master clock line.
+
+    config I2C_MASTER_SDA
+        int "SDA GPIO Num"
+        default 5 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
+        default 1 if  IDF_TARGET_ESP32S3
+        default 18 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2
+        help
+            GPIO number for I2C Master data line.
+
+    config I2C_MASTER_PORT_NUM
+        int "Port Number"
+        default 1 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+        default 0 if IDF_TARGET_ESP32C3 || IDF_TARGET_ESP32C2 || IDF_TARGET_ESP32H2
+        help
+            Port number for I2C Master device.
+
+    config I2C_MASTER_FREQUENCY
+        int "Master Frequency"
+        default 100000
+        help
+            I2C Speed of Master device.
+    endif
+    endmenu
+endmenu

@@ -1,0 +1,24 @@
+warning: the menuconfig symbol SUBCONFIG (defined at C:/Users/enriq/eclipse-workspace/HoCoSys/main/Kconfig.projbuild:138) has no prompt
+warning: SUBCONFIG (defined at C:/Users/enriq/eclipse-workspace/HoCoSys/main/Kconfig.projbuild:138) defined without a type
+Traceback (most recent call last):
+  File "C:\Users\enriq\ESP-IDF\esp-idf-v5.0.2\tools\kconfig_new\confgen.py", line 607, in <module>
+    main()
+  File "C:\Users\enriq\ESP-IDF\esp-idf-v5.0.2\tools\kconfig_new\confgen.py", line 328, in main
+    output_function(deprecated_options, config, temp_file)
+  File "C:\Users\enriq\ESP-IDF\esp-idf-v5.0.2\tools\kconfig_new\confgen.py", line 557, in write_json_menus
+    write_node(n)
+  File "C:\Users\enriq\ESP-IDF\esp-idf-v5.0.2\tools\kconfig_new\confgen.py", line 496, in write_node
+    'title': node.prompt[0],
+             ~~~~~~~~~~~^^^
+TypeError: 'NoneType' object is not subscriptable
+CMake Error at C:/Users/enriq/ESP-IDF/esp-idf-v5.0.2/tools/cmake/kconfig.cmake:176 (message):
+  Failed to run confgen.py
+  (C:/Users/enriq/.espressif/python_env/idf5.0_py3.11_env/Scripts/python.exe;C:/Users/enriq/ESP-IDF/esp-idf-v5.0.2/tools/kconfig_new/confgen.py;--list-separator=semicolon;--kconfig;C:/Users/enriq/ESP-IDF/esp-idf-v5.0.2/Kconfig;--sdkconfig-rename;C:/Users/enriq/ESP-IDF/esp-idf-v5.0.2/sdkconfig.rename;--config;C:/Users/enriq/eclipse-workspace/HoCoSys/sdkconfig;--env-file;C:/Users/enriq/eclipse-workspace/HoCoSys/build/config.env).
+  Error 1
+Call Stack (most recent call first):
+  C:/Users/enriq/ESP-IDF/esp-idf-v5.0.2/tools/cmake/build.cmake:590 (__kconfig_generate_config)
+  C:/Users/enriq/ESP-IDF/esp-idf-v5.0.2/tools/cmake/project.cmake:447 (idf_build_process)
+  CMakeLists.txt:6 (project)
+
+
+ninja: error: rebuilding 'build.ninja': subcommand failed

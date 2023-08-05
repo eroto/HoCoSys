@@ -1,0 +1,4 @@
+# Ignore all .log files
+*.log
+#Ignore build folfer
+/build/log

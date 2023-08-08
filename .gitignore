@@ -2,4 +2,4 @@
 *.log
 *.obj
 #Ignore build folfer
-/build/log
+/build/

@@ -1,4 +1,5 @@
-# Ignore all .log files
+# Ignore all  generated file lie .obj and .log files
 *.log
+*.obj
 #Ignore build folfer
 /build/log

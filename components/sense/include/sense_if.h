@@ -43,7 +43,7 @@ uint8_t sense_read_AI(sensorADC_t sensor, int *out);
 
 void sense_read_DI(void);
 
-void sense_init(void);
+esp_err_t sense_init(void);
 
 
 

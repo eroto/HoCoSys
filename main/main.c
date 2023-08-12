@@ -1,11 +1,13 @@
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include "sdkconfig.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "init.h"
-//#include "sdkconfig.h"
+
 
 static const char *TAG = "App Main";
 

@@ -31,7 +31,6 @@
 
 void sense_init_IntTempSensor(temperature_sensor_handle_t* temp_sensor);
 void sense_init_AIs(void);
-void sense_init_DIs(void);
 static bool example_adc_calibration_init(adc_unit_t unit, adc_atten_t atten, adc_cali_handle_t *out_handle);
 
 #endif /*__SENSE_H__*/

@@ -12,13 +12,20 @@ config WIFI
 	    string "WiFi SSID" if WIFI
 	    default "myssid" if WIFI
 	    help
-		SSID (network name) for the example to connect to.
+		SSD (network name) for the example to connect to.
 	
 	config ESP_WIFI_PASSWORD
 	    string "WiFi Password" if WIFI
 	    default "mypassword" if WIFI
 	    help
 		WiFi password (WPA or WPA2) for the example to use.
+		
+	config ESP_CONNECTION_MAXIMUM_RETRY
+		int "WiFi connection maximum retry"
+        range 0 255
+        default 3
+        help
+            WiFi connection maximum retry, from 0 to 255.
 	endif
 	endmenu
 

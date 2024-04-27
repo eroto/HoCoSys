@@ -13,6 +13,7 @@
 #include "apptask_if.h"
 #include "sense_if.h"
 #include "I2C_if.h"
+#include "blufi_if.h"
 #include "init.h"
 
 //uint8_t s_led_state = 0;
@@ -30,22 +31,28 @@ uint8_t sysinit1(void)
 	/*initialize Internal Temperature Sensor*/
 	result = sense_init();
 
+	sense_init_DOs();
+	sense_init_DIs();
+
+	I2C_init();
+
+	ESP_LOGI(TAG, "Starting i2c Initialization");
+	result = i2c_slave_init();
+	if (result != ESP_OK)
+	{
+		ESP_LOGI(TAG, "i2c_slave_init Initialization Error");
+		return result;
+	}
+
 	/*Initialize I2C Master*/
 	result = i2c_master_init();
-
 	if (result != ESP_OK)
 		{
 			ESP_LOGI(TAG, "i2c_master_init Initialization Error");
 			return result;
 		}
 
-	result = i2c_slave_init();
-
-	if (result != ESP_OK)
-	{
-		ESP_LOGI(TAG, "i2c_slave_init Initialization Error");
-		return result;
-	}
+	ESP_LOGI(TAG, "i2c_master_and_init Initialization OK");
 
 return result;
 }
@@ -55,6 +62,10 @@ uint8_t sysinit2(void)
 {
 	//Allow other core to finish initialization
 	//vTaskDelay(pdMS_TO_TICKS(100));
+
+	blufi_main();
+
+	//appwifi_init();
 
 	uint8_t result = 0;
 
@@ -77,5 +88,5 @@ uint8_t appinit2(void)
 
 	uint8_t result = 0;
 
-return result;
+	return result;
 }

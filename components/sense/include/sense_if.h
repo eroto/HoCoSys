@@ -32,18 +32,26 @@ typedef enum
 	MILL_VOLT,
 	VENT_VOLT,
 	RESISTOR_VOL,
-	MAX_ADC_SENSORS
-}sensorADC_t;
+	MAX_ADC1_SENSORS
+}sensorADC1_t;
+
+typedef enum
+{
+	DUMMY_SENSOR = 0,
+	MAX_ADC2_SENSORS
+}sensorADC2_t;
 
 //sense_read_t  Read_Type =
 
 float sense_getIntTempCelcius(void);
 
-uint8_t sense_read_AI(sensorADC_t sensor, int *out);
+uint8_t sense_read_AI(sensorADC1_t sensor, int *out);
 
 void sense_read_DI(void);
 
 esp_err_t sense_init(void);
+void sense_init_DIs(void);
+void sense_init_DOs(void);
 
 
 

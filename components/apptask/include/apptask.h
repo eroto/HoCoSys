@@ -5,6 +5,7 @@
 //#define tskIDLE_PRIORITY	2u
 #define CORE1				1
 
+//extern SemaphoreHandle_t print_mux;
 
 StaticTask_t xTask5Buffer;
 StaticTask_t xTask10Buffer;
@@ -26,6 +27,7 @@ TaskHandle_t TaskHandle20ms = NULL;
 TaskHandle_t TaskHandle50ms = NULL;
 TaskHandle_t TaskHandle100ms = NULL;
 TaskHandle_t TaskHandle500ms = NULL;
+
 
 #define TASK_PERIOD_5		5
 #define TASK_PERIOD_10		10

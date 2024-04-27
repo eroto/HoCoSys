@@ -1,28 +1,33 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <inttypes.h>
 #include "sdkconfig.h"
 #include "driver/gpio.h"
+#include "esp_blufi.h"
 #include "esp_log.h"
+#include "leds.h"
 #include "init.h"
 
 
 static const char *TAG = "App Main";
 
-
-
 void app_main(void)
 {
 	ESP_LOGI(TAG, "Calling Sysinit1()");
 	sysinit1();
-	ESP_LOGI(TAG, "Calling Appinit1()");
-	appinit1();
-	ESP_LOGI(TAG, "Calling Appinit2()");
-	appinit2();
+
 	ESP_LOGI(TAG, "Calling Sysinit2()");
 	sysinit2();
+
+	ESP_LOGI(TAG, "Calling Appinit1()");
+	appinit1();
+
+	ESP_LOGI(TAG, "Calling Appinit2()");
+	appinit2();
 
 	ESP_LOGI(TAG, "Scheduler shall start now!");
     //while (1) {

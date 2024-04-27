@@ -25,14 +25,27 @@
 
 #define ADC_ATTENUATION           ADC_ATTEN_DB_11
 
-adc_oneshot_unit_init_cfg_t ADC_OneShotCfg =
+adc_oneshot_unit_init_cfg_t ADC1_OneShotCfg =
 {
 		.unit_id = ADC_UNIT_1,
 		.ulp_mode =  ADC_ULP_MODE_FSM
 };
 
+adc_oneshot_unit_init_cfg_t ADC2_OneShotCfg =
+{
+		.unit_id = ADC_UNIT_2,
+		.ulp_mode =  ADC_ULP_MODE_FSM
+};
+
 //-------------ADC1 Config---------------//
-adc_oneshot_chan_cfg_t config =
+adc_oneshot_chan_cfg_t ADC1_config =
+{
+		.bitwidth = ADC_BITWIDTH_DEFAULT,
+        .atten = ADC_ATTENUATION,
+};
+
+//-------------ADC2 Config---------------//
+adc_oneshot_chan_cfg_t ADC2_config =
 {
 		.bitwidth = ADC_BITWIDTH_DEFAULT,
         .atten = ADC_ATTENUATION,
@@ -41,19 +54,28 @@ adc_oneshot_chan_cfg_t config =
 //-------------ADC1 Calibration Init---------------//
 adc_cali_handle_t adc1_cali_handle = NULL;
 
-bool do_calibration1 = 0;
+//-------------ADC2 Calibration Init---------------//
+adc_cali_handle_t adc2_cali_handle = NULL;
 
-adc_channel_t ADC1_Channels[MAX_ADC_SENSORS] =
+bool do_calibration1 = 0;
+bool do_calibration2 = 0;
+
+adc_channel_t ADC1_Channels[MAX_ADC1_SENSORS] =
 {
-	    ADC_CHANNEL_0,
-	    ADC_CHANNEL_1,
-	    ADC_CHANNEL_2,
 	    ADC_CHANNEL_3,
 	    ADC_CHANNEL_4,
 	    ADC_CHANNEL_5,
+	    ADC_CHANNEL_6,
+	    ADC_CHANNEL_7,
+	    ADC_CHANNEL_8,
 };
 
-adc_oneshot_unit_handle_t ADC_Handler;
+adc_channel_t ADC2_Channels[MAX_ADC2_SENSORS] =
+{
+	    ADC_CHANNEL_3,
+};
+
+adc_oneshot_unit_handle_t ADC1_Handler;
 
 /* ADC variable to store readings 2 ADC 10 channels each*/
 int adc_raw [2][10];
@@ -66,13 +88,13 @@ static temperature_sensor_config_t temp_sensor_config = TEMPERATURE_SENSOR_CONFI
 //zero-initialize the config structure.
 gpio_config_t io_conf = {};
 
-uint8_t sense_read_AI(sensorADC_t sensor, int *out)
+uint8_t sense_read_AI(sensorADC1_t sensor, int *out)
 {
 	uint8_t ret = 1;
 
-	if (sensor < MAX_ADC_SENSORS)
+	if (sensor < MAX_ADC1_SENSORS)
 	{
-		ESP_ERROR_CHECK(adc_oneshot_read(ADC_Handler, ADC1_Channels[sensor], &adc_raw[0][sensor]));
+		ESP_ERROR_CHECK(adc_oneshot_read(ADC1_Handler, ADC1_Channels[sensor], &adc_raw[0][sensor]));
 		*out = adc_raw[0][sensor];
 		ret = 0;
 	}
@@ -88,8 +110,8 @@ return ret;
 esp_err_t sense_init(void)
 {
 	sense_init_IntTempSensor(&IntTempSensor);
-	sense_init_AIs();
-	sense_init_DIs();
+
+	sense_init_AIs(); //TODO: This Initialization function interfere with the I2C function.
 
 return ESP_OK;
 }
@@ -106,11 +128,11 @@ void sense_init_AIs(void)
 {
 	uint8_t i =0;
 	ESP_LOGI(TAG, "Init. Analog sensors");
-	ESP_ERROR_CHECK(adc_oneshot_new_unit(&ADC_OneShotCfg, &ADC_Handler));
+	ESP_ERROR_CHECK(adc_oneshot_new_unit(&ADC1_OneShotCfg, &ADC1_Handler));
 
-	for(i = 0; i < MAX_ADC_SENSORS; i++)
+	for(i = 0; i < MAX_ADC1_SENSORS; i++)
 	{
-		ESP_ERROR_CHECK(adc_oneshot_config_channel(ADC_Handler, ADC1_Channels[i], &config));
+		ESP_ERROR_CHECK(adc_oneshot_config_channel(ADC1_Handler, ADC1_Channels[i], &ADC1_config));
 	}
 
 	// --------------------- ADC1 Calibration ---------------------//
@@ -120,8 +142,26 @@ void sense_init_AIs(void)
 
 void sense_init_DIs(void)
 {
+    /*Configure Inputs*/
 	/*Configure Outputs*/
-	ESP_LOGI(TAG, "Init. Digital sensors");
+	ESP_LOGI(TAG, "Init. Digital Inputs");
+    //interrupt of rising edge
+	io_conf.intr_type = GPIO_INTR_DISABLE;
+#if CONFIG_InputsConfig == 1
+	//bit mask of the pins, use GPIO4/5 here
+	io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
+#endif
+	//set as input mode
+	io_conf.mode = GPIO_MODE_INPUT;
+	//enable pull-up mode
+	io_conf.pull_up_en = 1;
+	gpio_config(&io_conf);
+}
+
+void sense_init_DOs(void)
+{
+	/*Configure Outputs*/
+	ESP_LOGI(TAG, "Init. Digital outputs");
     //disable interrupt
     io_conf.intr_type = GPIO_INTR_DISABLE;
     //set as output mode
@@ -138,19 +178,6 @@ void sense_init_DIs(void)
     io_conf.pull_up_en = 0;
     //configure GPIO with the given settings
     gpio_config(&io_conf);
-
-    /*Configure Inputs*/
-    //interrupt of rising edge
-	io_conf.intr_type = GPIO_INTR_POSEDGE;
-#if CONFIG_InputsConfig == 1
-	//bit mask of the pins, use GPIO4/5 here
-	io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
-#endif
-	//set as input mode
-	io_conf.mode = GPIO_MODE_INPUT;
-	//enable pull-up mode
-	io_conf.pull_up_en = 1;
-	gpio_config(&io_conf);
 }
 
 float sense_getIntTempCelcius(void)

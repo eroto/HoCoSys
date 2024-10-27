@@ -1185,15 +1185,5 @@ void blufi_main(void)
 
     BLUFI_INFO("BLUFI VERSION %04x\n", esp_blufi_get_version());
 
-
-
-
-
-
 	//TCPHandleTask = xTaskCreate(tcp_client_task, "tcp_client", 4096, NULL, 5, NULL);
-
-
-
-
-
 }

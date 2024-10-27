@@ -50,6 +50,7 @@ uint8_t sense_read_AI(sensorADC1_t sensor, int *out);
 void sense_read_DI(void);
 
 esp_err_t sense_init(void);
+void sense_deinit(void);
 void sense_init_DIs(void);
 void sense_init_DOs(void);
 

@@ -1,11 +1,20 @@
 #include <stdio.h>
-#include <stdlib.h>
+//#include <stdlib.h>
+#include <string.h>
+#include "esp_system.h"
+//#include "esp_console.h"
+//#include "esp_vfs_dev.h"
+//#include "esp_vfs_fat.h"
+//#include "cmd_system.h"
+//#include "cmd_wifi.h"
+//#include "cmd_nvs.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_task_wdt.h"
 #include "driver/gpio.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "esp_log.h"
+#include "linenoise/linenoise.h"
 #include "leds.h"
 #include "sense_if.h"
 #include "apptask_if.h"
@@ -16,12 +25,14 @@
 //TaskHandle_t xHandle = NULL;
 
 static const char *TAG = "AppTask";
+#define PROMPT_STR CONFIG_IDF_TARGET
 static float temp = 0;
 static uint8_t count_1Sec = 0;
 static uint8_t count_5Sec = 0;
 int a = 0;
 char UserInput = 0;
 uint8_t trigger = 1;
+
 
 void apptask_init(void)
 {
@@ -32,6 +43,8 @@ void apptask_init(void)
  	the 2 channels ESPS32-S3 shall be connected phisically */
 //	xTaskCreate(i2c_test_task, "i2c_test_task_0", 1024 * 2, (void *)0, 10, NULL);
 //	xTaskCreate(i2c_test_task, "i2c_test_task_1", 1024 * 2, (void *)1, 10, NULL);
+
+
 
 	TaskHandle5ms = xTaskCreateStaticPinnedToCore(
 								  apptask_5ms,
@@ -92,6 +105,17 @@ void apptask_init(void)
 								  xStack500msTask,
 								  &xTask500Buffer,
 								  CORE1);
+
+
+
+/*	xTaskCreatePinnedToCore(
+							ConsoleTask,
+							"ConsoleTask",
+							TASK_STACK_SIZE,
+							NULL,
+							3,
+							TaskHandleConsole,
+							CORE0);*/
 }
 
 void apptask_5ms(void *pvParameters )
@@ -172,6 +196,7 @@ uint8_t level = 0;
 uint8_t State = 0;
 uint8_t Next_state = 0;
 
+
 void apptask_500ms(void *pvParameters )
 {
 
@@ -208,7 +233,7 @@ void apptask_500ms(void *pvParameters )
 
 			if (count_1Sec == 2)
 			{
-				switch(State){
+			/*	switch(State){
 				case 0:
 					ESP_LOGI(TAG, "Enter IP address last number");
 					Next_state = 1;
@@ -225,15 +250,15 @@ void apptask_500ms(void *pvParameters )
 						Next_state = 1;
 					}
 
-					/*scanf("enter a number %d",&a);
-					ESP_LOGI(TAG, "Number, entered %d",a);
-
-					if(a < 255 && a >1){
-						Next_state = 2;
-						ESP_LOGI(TAG, "User Input: %d.",a);
-					}
-					else {Next_state = 1;}
-					*/
+					//scanf("enter a number %d",&a);
+					//ESP_LOGI(TAG, "Number, entered %d",a);
+					//
+					//if(a < 255 && a >1){
+					//	Next_state = 2;
+					//	ESP_LOGI(TAG, "User Input: %d.",a);
+					//}
+					//else {Next_state = 1;}
+					//
 				break;
 				case 2:
 					if(UserInput < 255 && UserInput>1){
@@ -276,7 +301,7 @@ void apptask_500ms(void *pvParameters )
 					Next_state = 4;
 					break;
 				}
-				State = Next_state;
+				State = Next_state;*/
 
 				if(level){
 					level = 0;
@@ -290,7 +315,7 @@ void apptask_500ms(void *pvParameters )
 			}else{}
 			if(count_5Sec == 10){
 				temp = sense_getIntTempCelcius();
-				ESP_LOGI(TAG, "Temperature value %.02f ℃",temp);
+				//ESP_LOGI(TAG, "Temperature value %.02f ℃",temp);
 				count_5Sec = 0;
 			}
 			else{

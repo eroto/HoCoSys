@@ -34,6 +34,13 @@
 #include "sense_if.h"
 #include "blufi.h"
 
+/*BLE GAP and GAT sec server includes*/
+#include "esp_gap_ble_api.h"
+#include "esp_gatts_api.h"
+#include "esp_bt_defs.h"
+#include "esp_bt_main.h"
+
+
 #include "esp_blufi.h"
 #include "lwip/err.h"
 #include "lwip/sockets.h"
@@ -50,37 +57,38 @@
 #define PORT 12345
 static const char *TAG = "TCP_example";
 char *payload = "Internal temperature from ESP32 ";
+#define GATTS_TABLE_TAG "SEC_GATTS_DEMO"
 #define EXAMPLE_NETIF_DESC_STA "example_netif_sta"
 
-static void tcp_client_task(void *pvParameters);
-void example_wifi_stop(void);
-void example_wifi_shutdown(void);
-esp_err_t example_wifi_sta_do_disconnect(void);
-static SemaphoreHandle_t s_semph_get_ip_addrs = NULL;
-static void example_handler_on_sta_got_ip(void *arg, esp_event_base_t event_base,
-                      int32_t event_id, void *event_data);
-void example_wifi_shutdown(void);
-static void example_handler_on_wifi_connect(void *esp_netif, esp_event_base_t event_base,
-                            int32_t event_id, void *event_data);
-static void example_handler_on_wifi_disconnect(void *arg, esp_event_base_t event_base,
-                               int32_t event_id, void *event_data);
-bool example_is_our_netif(const char *prefix, esp_netif_t *netif);
-/* The event group allows multiple bits for each event,
-   but we only care about one event - are we connected
-   to the AP with an IP? */
-const int CONNECTED_BIT = BIT0;
-static esp_netif_t *s_example_sta_netif = NULL;
-static void bluefi_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *param);
-//esp_err_t example_wifi_connect(void);
-static void example_wifi_connect(void);
-static wifi_config_t sta_config;
-static wifi_config_t ap_config;
-void example_print_all_netif_ips(const char *prefix);
-/* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifi_event_group;
-static int s_retry_num = 0;
-TaskHandle_t TCPHandleTask = NULL;
+/*Sec Server defines*/
+#define HEART_PROFILE_NUM                         1
+#define HEART_PROFILE_APP_IDX                     0
+#define ESP_HEART_RATE_APP_ID                     0x55
+#define HEART_RATE_SVC_INST_ID                    0
+#define EXT_ADV_HANDLE                            0
+#define NUM_EXT_ADV_SET                           1
+#define EXT_ADV_DURATION                          0
+#define EXT_ADV_MAX_EVENTS                        0
 
+#define GATTS_DEMO_CHAR_VAL_LEN_MAX               0x40
+
+enum
+{
+    IDX_SVC,
+    IDX_CHAR_A,
+    IDX_CHAR_VAL_A,
+    IDX_CHAR_CFG_A,
+
+    IDX_CHAR_B,
+    IDX_CHAR_VAL_B,
+
+    IDX_CHAR_C,
+    IDX_CHAR_VAL_C,
+
+    HRS_IDX_NB,
+};
+
+/*BluFi Variables*/
 static uint8_t example_wifi_retry = 0;
 
 /* store the station info for send back to phone */
@@ -93,6 +101,74 @@ static int gl_sta_ssid_len;
 static wifi_sta_list_t gl_sta_list;
 static bool gl_sta_is_connecting = false;
 static esp_blufi_extra_info_t gl_sta_conn_info;
+
+/*TCP variables*/
+static SemaphoreHandle_t s_semph_get_ip_addrs = NULL;
+const int CONNECTED_BIT = BIT0;
+static esp_netif_t *s_example_sta_netif = NULL;
+static wifi_config_t sta_config;
+static wifi_config_t ap_config;
+
+
+/*TCP Func declarations*/
+static void tcp_client_task(void *pvParameters);
+void example_wifi_stop(void);
+void example_wifi_shutdown(void);
+esp_err_t example_wifi_sta_do_disconnect(void);
+
+static void example_handler_on_sta_got_ip(void *arg, esp_event_base_t event_base,
+                      int32_t event_id, void *event_data);
+void example_wifi_shutdown(void);
+static void example_handler_on_wifi_connect(void *esp_netif, esp_event_base_t event_base,
+                            int32_t event_id, void *event_data);
+static void example_handler_on_wifi_disconnect(void *arg, esp_event_base_t event_base,
+                               int32_t event_id, void *event_data);
+bool example_is_our_netif(const char *prefix, esp_netif_t *netif);
+/* The event group allows multiple bits for each event,
+   but we only care about one event - are we connected
+   to the AP with an IP? */
+
+static void bluefi_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_param_t *param);
+//esp_err_t example_wifi_connect(void);
+static void example_wifi_connect(void);
+
+void example_print_all_netif_ips(const char *prefix);
+void bluefi_ip_info(const char *prefix);
+
+/* FreeRTOS event group to signal when we are connected & ready to make a request */
+static EventGroupHandle_t wifi_event_group;
+static int s_retry_num = 0;
+TaskHandle_t TCPHandleTask = NULL;
+
+esp_ble_gap_ext_adv_params_t ext_adv_params_2M = {
+    .type = ESP_BLE_GAP_SET_EXT_ADV_PROP_CONNECTABLE,
+    .interval_min = 0x20,
+    .interval_max = 0x20,
+    .channel_map = ADV_CHNL_ALL,
+    .filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+    .primary_phy = ESP_BLE_GAP_PHY_1M,
+    .max_skip = 0,
+    .secondary_phy = ESP_BLE_GAP_PHY_2M,
+    .sid = 0,
+    .scan_req_notif = false,
+    .own_addr_type = BLE_ADDR_TYPE_PUBLIC,
+    .tx_power = EXT_ADV_TX_PWR_NO_PREFERENCE,
+};
+
+struct gatts_profile_inst {
+    esp_gatts_cb_t gatts_cb;
+    uint16_t gatts_if;
+    uint16_t app_id;
+    uint16_t conn_id;
+    uint16_t service_handle;
+    esp_gatt_srvc_id_t service_id;
+    uint16_t char_handle;
+    esp_bt_uuid_t char_uuid;
+    esp_gatt_perm_t perm;
+    esp_gatt_char_prop_t property;
+    uint16_t descr_handle;
+    esp_bt_uuid_t descr_uuid;
+};
 
 static void example_record_wifi_conn_info(int rssi, uint8_t reason)
 {
@@ -572,6 +648,45 @@ void example_print_all_netif_ips(const char *prefix)
     }
 }
 
+const char *host_name_ptr = "temp";
+//const char **host_name_dptr = (const char *)&host_name_ptr;
+const char **host_name_dptr = &host_name_ptr;
+
+void bluefi_ip_info(const char *prefix)
+{
+    // iterate over active interfaces, and print out IPs of "our" netifs
+    esp_netif_t *netif = NULL;
+    esp_netif_ip_info_t ip;
+    uint8_t mac[6];
+    //const char *host_name_ptr = &HoCoSys_host_name;
+
+    //char **ipinfo_host_name = NULL;
+    //*ipinfo_host_name = NULL;
+    //(char*)*ipinfo_host_name = NULL;
+
+    for (int i = 0; i < esp_netif_get_nr_of_ifs(); ++i) {
+        netif = esp_netif_next(netif);
+        if (example_is_our_netif(prefix, netif)) {
+            printf("Connected to:%s\n", esp_netif_get_desc(netif));
+            ESP_ERROR_CHECK(esp_netif_get_ip_info(netif, &ip));
+            ESP_ERROR_CHECK(esp_netif_get_hostname(netif, (const char **)host_name_dptr));
+            ESP_ERROR_CHECK(esp_netif_get_mac(netif,mac));
+
+            printf("IPv4 address:"IPSTR"\n", IP2STR(&ip.ip));
+            printf("MAC address:%x-%x-%x-%x-%x-%x\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[4]);
+            printf("Host Name %s\n",host_name_ptr);
+#if CONFIG_EXAMPLE_CONNECT_IPV6
+            esp_ip6_addr_t ip6[MAX_IP6_ADDRS_PER_NETIF];
+            int ip6_addrs = esp_netif_get_all_ip6(netif, ip6);
+            for (int j = 0; j < ip6_addrs; ++j) {
+                esp_ip6_addr_type_t ipv6_type = esp_netif_ip6_get_addr_type(&(ip6[j]));
+                ESP_LOGI(TAG, "- IPv6 address: " IPV6STR ", type: %s", IPV62STR(ip6[j]), example_ipv6_addr_types_to_str[ipv6_type]);
+            }
+#endif
+        }
+    }
+}
+
 static void initialise_wifi(void)
 {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -818,19 +933,208 @@ bool blufi_GetWiFiConStatus(void)
 {
 	return gl_sta_connected;
 }
+/*
+static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param)
+{
+    switch (event) {
+    case ESP_GAP_BLE_EXT_ADV_SET_PARAMS_COMPLETE_EVT:
+        ESP_LOGI(GATTS_TABLE_TAG,"ESP_GAP_BLE_EXT_ADV_SET_PARAMS_COMPLETE_EVT status %d",  param->ext_adv_set_params.status);
+        esp_ble_gap_config_ext_adv_data_raw(EXT_ADV_HANDLE,  sizeof(ext_adv_raw_data), &ext_adv_raw_data[0]);
+        break;
+    case ESP_GAP_BLE_EXT_ADV_DATA_SET_COMPLETE_EVT:
+         ESP_LOGI(GATTS_TABLE_TAG,"ESP_GAP_BLE_EXT_ADV_DATA_SET_COMPLETE_EVT status %d",  param->ext_adv_data_set.status);
+         esp_ble_gap_ext_adv_start(NUM_EXT_ADV_SET, &ext_adv[0]);
+         break;
+    case ESP_GAP_BLE_EXT_ADV_START_COMPLETE_EVT:
+         ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_EXT_ADV_START_COMPLETE_EVT, status = %d", param->ext_adv_data_set.status);
+        break;
+    case ESP_GAP_BLE_ADV_TERMINATED_EVT:
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_ADV_TERMINATED_EVT, status = %d", param->adv_terminate.status);
+        if(param->adv_terminate.status == 0x00) {
+            ESP_LOGI(GATTS_TABLE_TAG, "ADV successfully ended with a connection being created");
+        }
+        break;
+    case ESP_GAP_BLE_PASSKEY_REQ_EVT:                           // passkey request event
+        // Call the following function to input the passkey which is displayed on the remote device
+        //esp_ble_passkey_reply(heart_rate_profile_tab[HEART_PROFILE_APP_IDX].remote_bda, true, 0x00);
+        break;
+    case ESP_GAP_BLE_OOB_REQ_EVT: {
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_OOB_REQ_EVT");
+        uint8_t tk[16] = {1}; //If you paired with OOB, both devices need to use the same tk
+        esp_ble_oob_req_reply(param->ble_security.ble_req.bd_addr, tk, sizeof(tk));
+        break;
+    }
+    case ESP_GAP_BLE_LOCAL_IR_EVT:                               //BLE local IR event
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_LOCAL_IR_EVT");
+        break;
+    case ESP_GAP_BLE_LOCAL_ER_EVT:                               //BLE local ER event
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_LOCAL_ER_EVT");
+        break;
+    case ESP_GAP_BLE_NC_REQ_EVT:
+        // The app will receive this evt when the IO has DisplayYesNO capability and the peer device IO also has DisplayYesNo capability.
+        show the passkey number to the user to confirm it with the number displayed by peer device.
+        esp_ble_confirm_reply(param->ble_security.ble_req.bd_addr, true);
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_NC_REQ_EVT, the passkey Notify number:%" PRIu32, param->ble_security.key_notif.passkey);
+        break;
+    case ESP_GAP_BLE_SEC_REQ_EVT:
+        // send the positive(true) security response to the peer device to accept the security request.
+        //If not accept the security request, should send the security response with negative(false) accept value
+        esp_ble_gap_security_rsp(param->ble_security.ble_req.bd_addr, true);
+        break;
+    case ESP_GAP_BLE_PASSKEY_NOTIF_EVT:  ///the app will receive this evt when the IO  has Output capability and the peer device IO has Input capability.
+        ///show the passkey number to the user to input it in the peer device.
+        ESP_LOGI(GATTS_TABLE_TAG, "The passkey Notify number:%06" PRIu32, param->ble_security.key_notif.passkey);
+        break;
+    case ESP_GAP_BLE_KEY_EVT:
+        //shows the ble key info share with peer device to the user.
+        ESP_LOGI(GATTS_TABLE_TAG, "key type = %s", esp_key_type_to_str(param->ble_security.ble_key.key_type));
+        break;
+    case ESP_GAP_BLE_AUTH_CMPL_EVT: {
+        esp_bd_addr_t bd_addr;
+        memcpy(bd_addr, param->ble_security.auth_cmpl.bd_addr, sizeof(esp_bd_addr_t));
+        ESP_LOGI(GATTS_TABLE_TAG, "remote BD_ADDR: %08x%04x",\
+                (bd_addr[0] << 24) + (bd_addr[1] << 16) + (bd_addr[2] << 8) + bd_addr[3],
+                (bd_addr[4] << 8) + bd_addr[5]);
+        ESP_LOGI(GATTS_TABLE_TAG, "address type = %d", param->ble_security.auth_cmpl.addr_type);
+        ESP_LOGI(GATTS_TABLE_TAG, "pair status = %s",param->ble_security.auth_cmpl.success ? "success" : "fail");
+        if(!param->ble_security.auth_cmpl.success) {
+            ESP_LOGI(GATTS_TABLE_TAG, "fail reason = 0x%x",param->ble_security.auth_cmpl.fail_reason);
+        } else {
+            ESP_LOGI(GATTS_TABLE_TAG, "auth mode = %s",esp_auth_req_to_str(param->ble_security.auth_cmpl.auth_mode));
+        }
+        show_bonded_devices();
+        break;
+    }
+    case ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT: {
+        ESP_LOGD(GATTS_TABLE_TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT status = %d", param->remove_bond_dev_cmpl.status);
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV");
+        ESP_LOGI(GATTS_TABLE_TAG, "-----ESP_GAP_BLE_REMOVE_BOND_DEV----");
+        esp_log_buffer_hex(GATTS_TABLE_TAG, (void *)param->remove_bond_dev_cmpl.bd_addr, sizeof(esp_bd_addr_t));
+        ESP_LOGI(GATTS_TABLE_TAG, "------------------------------------");
+        break;
+    }
+    case ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT:
+        ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_SET_LOCAL_PRIVACY_COMPLETE_EVT, tatus = %x", param->local_privacy_cmpl.status);
+        esp_ble_gap_ext_adv_set_params(EXT_ADV_HANDLE, &ext_adv_params_2M);
+        break;
+    case ESP_GAP_BLE_UPDATE_CONN_PARAMS_EVT:
+         ESP_LOGI(GATTS_TABLE_TAG, "update connection params status = %d, min_int = %d, max_int = %d,conn_int = %d,latency = %d, timeout = %d",
+                  param->update_conn_params.status,
+                  param->update_conn_params.min_int,
+                  param->update_conn_params.max_int,
+                  param->update_conn_params.conn_int,
+                  param->update_conn_params.latency,
+                  param->update_conn_params.timeout);
+        break;
+    default:
+        break;
+    }
+}
+
+static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
+                                        esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param)
+{
+    switch (event) {
+        case ESP_GATTS_REG_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_REG_EVT");
+            //generate a resolvable random address
+            esp_ble_gap_config_local_privacy(true);
+            esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID);
+            break;
+        case ESP_GATTS_READ_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_READ_EVT");
+            break;
+        case ESP_GATTS_WRITE_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_WRITE_EVT, write value:");
+            esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
+            break;
+        case ESP_GATTS_EXEC_WRITE_EVT:
+            break;
+        case ESP_GATTS_MTU_EVT:
+            break;
+        case ESP_GATTS_CONF_EVT:
+            break;
+        case ESP_GATTS_UNREG_EVT:
+            break;
+        case ESP_GATTS_DELETE_EVT:
+            break;
+        case ESP_GATTS_START_EVT:
+            break;
+        case ESP_GATTS_STOP_EVT:
+            break;
+        case ESP_GATTS_CONNECT_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_CONNECT_EVT");
+            // start security connect with peer device when receive the connect event sent by the master
+            esp_ble_set_encryption(param->connect.remote_bda, ESP_BLE_SEC_ENCRYPT_MITM);
+            break;
+        case ESP_GATTS_DISCONNECT_EVT:
+            ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_DISCONNECT_EVT, disconnect reason 0x%x", param->disconnect.reason);
+            // start advertising again when missing the connect
+            esp_ble_gap_ext_adv_start(NUM_EXT_ADV_SET, &ext_adv[0]);
+            break;
+        case ESP_GATTS_OPEN_EVT:
+            break;
+        case ESP_GATTS_CANCEL_OPEN_EVT:
+            break;
+        case ESP_GATTS_CLOSE_EVT:
+            break;
+        case ESP_GATTS_LISTEN_EVT:
+            break;
+        case ESP_GATTS_CONGEST_EVT:
+            break;
+        case ESP_GATTS_CREAT_ATTR_TAB_EVT: {
+            ESP_LOGI(GATTS_TABLE_TAG, "The number handle = %x",param->add_attr_tab.num_handle);
+            if (param->create.status == ESP_GATT_OK){
+                if(param->add_attr_tab.num_handle == HRS_IDX_NB) {
+                    memcpy(profile_handle_table, param->add_attr_tab.handles,
+                    sizeof(profile_handle_table));
+                   esp_ble_gatts_start_service(profile_handle_table[IDX_SVC]);
+                }else{
+                    ESP_LOGE(GATTS_TABLE_TAG, "Create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
+                         param->add_attr_tab.num_handle, HRS_IDX_NB);
+                }
+            }else{
+                ESP_LOGE(GATTS_TABLE_TAG, " Create attribute table failed, error code = %x", param->create.status);
+            }
+        break;
+    }
+
+        default:
+           break;
+    }
+}
+
+static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
+                                esp_ble_gatts_cb_param_t *param)
+{
+    // If event is register event, store the gatts_if for each profile
+    if (event == ESP_GATTS_REG_EVT) {
+        if (param->reg.status == ESP_GATT_OK) {
+            heart_rate_profile_tab[HEART_PROFILE_APP_IDX].gatts_if = gatts_if;
+        } else {
+            ESP_LOGI(GATTS_TABLE_TAG, "Reg app failed, app_id %04x, status %d\n",
+                    param->reg.app_id,
+                    param->reg.status);
+            return;
+        }
+    }
+
+    do {
+        int idx;
+        for (idx = 0; idx < HEART_PROFILE_NUM; idx++) {
+            if (gatts_if == ESP_GATT_IF_NONE || // ESP_GATT_IF_NONE, not specify a certain gatt_if, need to call every profile cb function
+                    gatts_if == heart_rate_profile_tab[idx].gatts_if) {
+                if (heart_rate_profile_tab[idx].gatts_cb) {
+                    heart_rate_profile_tab[idx].gatts_cb(event, gatts_if, param);
+                }
+            }
+        }
+    } while (0);
+}*/
 
 void blufi_main(void)
 {
     esp_err_t ret;
-
-    // Initialize NVS
-    ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK( ret );
 
     initialise_wifi();
     BLUFI_INFO("WiFi initialized");
@@ -849,6 +1153,29 @@ void blufi_main(void)
         return;
     }
 
+    ESP_LOGI(GATTS_TABLE_TAG, "%s init bluetooth", __func__);
+    ret = esp_bluedroid_init();
+    if (ret) {
+    	ESP_LOGE(GATTS_TABLE_TAG, "%s init bluetooth failed: %s", __func__, esp_err_to_name(ret));
+    	return;
+    }
+    ret = esp_bluedroid_enable();
+    if (ret) {
+    	ESP_LOGE(GATTS_TABLE_TAG, "%s enable bluetooth failed: %s", __func__, esp_err_to_name(ret));
+    	return;
+    }
+/*
+    ret = esp_ble_gatts_register_callback(gatts_event_handler);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gatts register error, error code = %x", ret);
+        return;
+    }
+    ret = esp_ble_gap_register_callback(gap_event_handler);
+    if (ret){
+        ESP_LOGE(GATTS_TABLE_TAG, "gap register error, error code = %x", ret);
+        return;
+    }*/
+
     ret = esp_blufi_host_and_cb_init(&bluefi_callbacks);
     if (ret) {
         BLUFI_ERROR("%s initialise failed: %s\n", __func__, esp_err_to_name(ret));
@@ -858,5 +1185,15 @@ void blufi_main(void)
 
     BLUFI_INFO("BLUFI VERSION %04x\n", esp_blufi_get_version());
 
+
+
+
+
+
 	//TCPHandleTask = xTaskCreate(tcp_client_task, "tcp_client", 4096, NULL, 5, NULL);
+
+
+
+
+
 }

@@ -26,6 +26,9 @@
 #include "mbedtls/md5.h"
 #include "esp_crc.h"
 
+
+static const char *BLUFI_TAG = "BLUEFI:";
+
 /*
    The SEC_TYPE_xxx is for self-defined packet data type in the procedure of "BLUFI negotiate key"
    If user use other negotiation procedure to exchange(or generate) key, should redefine the type by yourself.
@@ -68,6 +71,8 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
     int ret;
     uint8_t type = data[0];
 
+    ESP_LOGI(BLUFI_TAG,"Entering DH negotiation handler...");
+
     if (blufi_sec == NULL) {
         BLUFI_ERROR("BLUFI Security is not initialized");
         btc_blufi_report_error(ESP_BLUFI_INIT_SECURITY_ERROR);
@@ -76,6 +81,7 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
 
     switch (type) {
     case SEC_TYPE_DH_PARAM_LEN:
+    	 ESP_LOGI(BLUFI_TAG,"SEC_TYPE_DH_PARAM_LEN");
         blufi_sec->dh_param_len = ((data[1]<<8)|data[2]);
         if (blufi_sec->dh_param) {
             free(blufi_sec->dh_param);
@@ -89,6 +95,7 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
         }
         break;
     case SEC_TYPE_DH_PARAM_DATA:{
+    	ESP_LOGI(BLUFI_TAG,"SEC_TYPE_DH_PARAM_DATA");
         if (blufi_sec->dh_param == NULL) {
             BLUFI_ERROR("%s, blufi_sec->dh_param == NULL\n", __func__);
             btc_blufi_report_error(ESP_BLUFI_DH_PARAM_ERROR);
@@ -142,10 +149,13 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
     }
         break;
     case SEC_TYPE_DH_P:
+    	ESP_LOGI(BLUFI_TAG,"SEC_TYPE_DH_P");
         break;
     case SEC_TYPE_DH_G:
+    	ESP_LOGI(BLUFI_TAG,"SEC_TYPE_DH_G");
         break;
     case SEC_TYPE_DH_PUBLIC:
+    	ESP_LOGI(BLUFI_TAG,"SEC_TYPE_DH_PUBLIC");
         break;
     }
 }
@@ -155,7 +165,7 @@ int blufi_aes_encrypt(uint8_t iv8, uint8_t *crypt_data, int crypt_len)
     int ret;
     size_t iv_offset = 0;
     uint8_t iv0[16];
-
+    ESP_LOGI("BLUEFI:","Entering AES_ENCRYPT");
     memcpy(iv0, blufi_sec->iv, sizeof(blufi_sec->iv));
     iv0[0] = iv8;   /* set iv8 as the iv0[0] */
 
@@ -172,7 +182,7 @@ int blufi_aes_decrypt(uint8_t iv8, uint8_t *crypt_data, int crypt_len)
     int ret;
     size_t iv_offset = 0;
     uint8_t iv0[16];
-
+    ESP_LOGI("BLUEFI:","Entering AES_DECRYPT");
     memcpy(iv0, blufi_sec->iv, sizeof(blufi_sec->iv));
     iv0[0] = iv8;   /* set iv8 as the iv0[0] */
 
@@ -187,12 +197,14 @@ int blufi_aes_decrypt(uint8_t iv8, uint8_t *crypt_data, int crypt_len)
 uint16_t blufi_crc_checksum(uint8_t iv8, uint8_t *data, int len)
 {
     /* This iv8 ignore, not used */
+	ESP_LOGI("BLUEFI:","Entering CRC checksum");
     return esp_crc16_be(0, data, len);
 }
 
 esp_err_t blufi_security_init(void)
 {
-    blufi_sec = (struct blufi_security *)malloc(sizeof(struct blufi_security));
+	ESP_LOGI("BLUEFI:","Entering BlueFi Security Init");
+	blufi_sec = (struct blufi_security *)malloc(sizeof(struct blufi_security));
     if (blufi_sec == NULL) {
         return ESP_FAIL;
     }
@@ -208,7 +220,8 @@ esp_err_t blufi_security_init(void)
 
 void blufi_security_deinit(void)
 {
-    if (blufi_sec == NULL) {
+	ESP_LOGI("BLUEFI:","Entering BlueFi Security Deinit");
+	if (blufi_sec == NULL) {
         return;
     }
     if (blufi_sec->dh_param){

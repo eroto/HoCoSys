@@ -12,5 +12,7 @@
 extern void blufi_main(void);
 extern bool blufi_GetBLEConStatus(void);
 extern bool blufi_GetWiFiConStatus(void);
+extern void example_print_all_netif_ips(const char *prefix);
+extern void bluefi_ip_info(const char *prefix);
 
 #endif /* _BLUFI_IF_H_ */

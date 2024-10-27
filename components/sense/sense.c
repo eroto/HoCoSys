@@ -124,6 +124,15 @@ void sense_init_IntTempSensor(temperature_sensor_handle_t* temp_sensor)
     ESP_ERROR_CHECK(temperature_sensor_enable(*temp_sensor));
 }
 
+void sense_deinit(void)
+{
+	ESP_LOGI(TAG,"Shuting down, disable & uninstalling IntTempSensor");
+	temperature_sensor_disable(IntTempSensor);
+	temperature_sensor_uninstall(IntTempSensor);
+
+	//sense_init_AIs(); //TODO: This Initialization function interfere with the I2C function.
+}
+
 void sense_init_AIs(void)
 {
 	uint8_t i =0;
@@ -155,7 +164,7 @@ void sense_init_DIs(void)
 	io_conf.mode = GPIO_MODE_INPUT;
 	//enable pull-up mode
 	io_conf.pull_up_en = 1;
-	gpio_config(&io_conf);
+	ESP_ERROR_CHECK(gpio_config(&io_conf));
 }
 
 void sense_init_DOs(void)
@@ -177,12 +186,11 @@ void sense_init_DOs(void)
     //disable pull-up mode
     io_conf.pull_up_en = 0;
     //configure GPIO with the given settings
-    gpio_config(&io_conf);
+    ESP_ERROR_CHECK(gpio_config(&io_conf));
 }
 
 float sense_getIntTempCelcius(void)
 {
-	ESP_LOGI(TAG, "Read temperature");
 	float tsens_value = 0;
 	ESP_ERROR_CHECK(temperature_sensor_get_celsius(IntTempSensor, &tsens_value));
 

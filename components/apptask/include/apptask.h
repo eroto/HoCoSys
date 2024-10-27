@@ -3,6 +3,7 @@
 
 #define TASK_STACK_SIZE		4096
 //#define tskIDLE_PRIORITY	2u
+#define CORE0				0
 #define CORE1				1
 
 //extern SemaphoreHandle_t print_mux;
@@ -27,6 +28,7 @@ TaskHandle_t TaskHandle20ms = NULL;
 TaskHandle_t TaskHandle50ms = NULL;
 TaskHandle_t TaskHandle100ms = NULL;
 TaskHandle_t TaskHandle500ms = NULL;
+TaskHandle_t *const TaskHandleConsole = NULL;
 
 
 #define TASK_PERIOD_5		5
@@ -43,5 +45,6 @@ void apptask_20ms(void *pvParameters );
 void apptask_50ms(void *pvParameters );
 void apptask_100ms(void *pvParameters );
 void apptask_500ms(void *pvParameters );
+//void ConsoleTask(void *pvParameters);
 
 #endif /*__APPTASK_H__*/

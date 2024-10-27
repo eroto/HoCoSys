@@ -1,10 +1,9 @@
-idf_component_register(SRCS "apptask.c"
+idf_component_register(SRCS "consola.c"
                     INCLUDE_DIRS "include"
                     REQUIRES freertos
-                    REQUIRES leds
                     REQUIRES sense
-                    REQUIRES I2C
+                    REQUIRES esp_wifi
                     REQUIRES blufi
                     REQUIRES console
-                    REQUIRES esp_system)
+                    )
 

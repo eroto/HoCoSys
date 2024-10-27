@@ -3,3 +3,6 @@
 *.obj
 #Ignore build folfer
 /build/
+/.cproject
+/.project
+/ss

@@ -6,3 +6,5 @@
 /.cproject
 /.project
 /ss
+/.clang-format
+/.clangd

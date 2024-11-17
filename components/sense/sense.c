@@ -23,7 +23,7 @@
 #define EXAMPLE_ADC1_CHAN1          ADC_CHANNEL_3
 #endif
 
-#define ADC_ATTENUATION           ADC_ATTEN_DB_11
+#define ADC_ATTENUATION           ADC_ATTEN_DB_12
 
 adc_oneshot_unit_init_cfg_t ADC1_OneShotCfg =
 {

@@ -13,8 +13,11 @@
 
 #define PROMPT_STR CONFIG_IDF_TARGET
 
+extern int32_t get_rstCtr(void);
+
 /* Command handler for user input */
-static int cmd_echo(int argc, char** argv) {
+static int cmd_echo(int argc, char** argv)
+{
     for (int i = 1; i < argc; i++) {
         printf("%s ", argv[i]);
     }
@@ -23,14 +26,15 @@ static int cmd_echo(int argc, char** argv) {
 }
 
 /*'restart' command restarts the program */
-static int restart(int argc, char **argv){
+static int restart(int argc, char **argv)
+{
     ESP_LOGI(TAG, "Restarting");
     esp_restart();
 }
 
 /* Get chip internal temperature in ºC */
-static int cmd_temp(int argc, char** argv) {
-
+static int cmd_temp(int argc, char** argv)
+{
 	float temp = sense_getIntTempCelcius();
 	printf("%f Cº\n",temp);
     return 0;
@@ -38,13 +42,20 @@ static int cmd_temp(int argc, char** argv) {
 
 //char *ThePrefix = "sta";
 
-static int ipconfig(int argc, char **argv){
-
+static int ipconfig(int argc, char **argv)
+{
 	wifi_mode_t WiFi_mode;
 	esp_wifi_get_mode((wifi_mode_t *)&WiFi_mode);
 	printf("Wifi Modes: Invalid=0 STA=1, AP=2, APSTA=3\n");
 	printf("Wifi Mode:%d\n",WiFi_mode);
 	bluefi_ip_info((char *)"sta");
+	return 0;
+}
+
+static int ResetCtr(int argc, char **argv)
+{
+	int32_t ctr = get_rstCtr();
+	printf("Number of restarts:%li\n",ctr);
 	return 0;
 }
 
@@ -93,6 +104,18 @@ static void register_ipconfig(void)
     ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
 }
 
+static void register_ResetCtr(void)
+{
+    const esp_console_cmd_t cmd = {
+        .command = "ResetCtr",
+        .help = "Print the number system restarts",
+        .hint = NULL,
+        .func = &ResetCtr,
+    };
+    ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
+}
+
+
 /*
 static void register_version(void)
 {
@@ -132,6 +155,7 @@ void consola_Init(void)
 	    register_temp_command();
 	    register_restart();
 	    register_ipconfig();
+	    register_ResetCtr();
 	    //register_system();
 	    //register_wifi();
 	    //register_nvs();

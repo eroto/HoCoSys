@@ -10,5 +10,6 @@ idf_component_register(SRCS "blufi.c"
                     REQUIRES nvs_flash
                     REQUIRES lwip
                     REQUIRES esp_netif
-                    REQUIRES sense)
+                    REQUIRES sense
+                    REQUIRES apptask)
 

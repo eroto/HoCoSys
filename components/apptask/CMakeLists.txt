@@ -6,5 +6,6 @@ idf_component_register(SRCS "apptask.c"
                     REQUIRES I2C
                     REQUIRES blufi
                     REQUIRES console
+                    REQUIRES rtc
                     REQUIRES esp_system)
 

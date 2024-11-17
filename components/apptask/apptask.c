@@ -8,6 +8,7 @@
 //#include "cmd_system.h"
 //#include "cmd_wifi.h"
 //#include "cmd_nvs.h"
+#include "rtc.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_task_wdt.h"
 #include "driver/gpio.h"
@@ -17,11 +18,12 @@
 #include "linenoise/linenoise.h"
 #include "leds.h"
 #include "sense_if.h"
-#include "apptask_if.h"
 #include "I2C_if.h"
 #include "esp_blufi_api.h"
+
 #include "blufi_if.h"
 #include "apptask.h"
+//#include "apptask_if.h"
 //TaskHandle_t xHandle = NULL;
 
 static const char *TAG = "AppTask";
@@ -32,19 +34,28 @@ static uint8_t count_5Sec = 0;
 int a = 0;
 char UserInput = 0;
 uint8_t trigger = 1;
+QueueHandle_t xQueue;
+ts_BLEMsg lReceivedValue;
 
+typedef struct
+{
+
+}BLE_AppData;
+
+void apptask_init(void);
+void rtc_set_sntp(void);
 
 void apptask_init(void)
 {
 //	print_mux = xSemaphoreCreateMutex();
 //static uint8_t ucParameterToPass = 45;
 
-/* This IcX taks are used for testing purposes, the test uses the 2 ES32-S3 channels
+/* This I2C taks are used for testing purposes, the test uses the 2 ES32-S3 channels
  	the 2 channels ESPS32-S3 shall be connected phisically */
 //	xTaskCreate(i2c_test_task, "i2c_test_task_0", 1024 * 2, (void *)0, 10, NULL);
 //	xTaskCreate(i2c_test_task, "i2c_test_task_1", 1024 * 2, (void *)1, 10, NULL);
 
-
+	xQueue = xQueueCreate( 2, sizeof(ts_BLEMsg) );
 
 	TaskHandle5ms = xTaskCreateStaticPinnedToCore(
 								  apptask_5ms,
@@ -121,13 +132,23 @@ void apptask_init(void)
 void apptask_5ms(void *pvParameters )
 {
 	TickType_t xLastWakeTime = 0;
+	BaseType_t xStatus;
 	const TickType_t xPeriod_5 = pdMS_TO_TICKS(TASK_PERIOD_5);
+	//const TickType_t xTicksToWait = pdMS_TO_TICKS(5);
 
 		xLastWakeTime = xTaskGetTickCount();
 	for( ;; )
 	{
 		vTaskDelayUntil( &xLastWakeTime, xPeriod_5 );
 		/* Task code goes here. */
+		if( uxQueueMessagesWaiting( xQueue ) != 0 )
+		{
+			ESP_LOGI(TAG, "Queue should have been empty!\r\n");
+			xStatus = xQueueReceive( xQueue, &lReceivedValue, 5);
+			//ESP_LOGI(TAG, "val of ReceivedValue[0]:%i",lReceivedValue.data[0]);
+			esp_log_buffer_hex("Received ", lReceivedValue.data, lReceivedValue.data_len);
+			ESP_LOGI(TAG, "length of ReceivedValue: %ld",lReceivedValue.data_len);
+		}
 
 	}
 }
@@ -316,7 +337,13 @@ void apptask_500ms(void *pvParameters )
 			if(count_5Sec == 10){
 				temp = sense_getIntTempCelcius();
 				//ESP_LOGI(TAG, "Temperature value %.02f ℃",temp);
-				count_5Sec = 0;
+				rtc_set_sntp();
+
+				 //= gettimeofday()
+
+
+
+								count_5Sec = 0;
 			}
 			else{
 			}

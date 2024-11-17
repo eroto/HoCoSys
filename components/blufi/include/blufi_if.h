@@ -8,6 +8,10 @@
 #ifndef _BLUFI_IF_H_
 #define _BLUFI_IF_H_
 
+typedef struct
+{   uint8_t *data; //Custom data
+	uint32_t data_len;
+}ts_BLEMsg;
 
 extern void blufi_main(void);
 extern bool blufi_GetBLEConStatus(void);

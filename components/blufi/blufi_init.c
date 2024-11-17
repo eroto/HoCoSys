@@ -97,7 +97,7 @@ esp_err_t esp_blufi_host_and_cb_init(esp_blufi_callbacks_t *example_callbacks)
         BLUFI_ERROR("%s initialise host failed: %s\n", __func__, esp_err_to_name(ret));
         return ret;
     }
-
+    /*BluFi GATTs event hadler*/
     ret = esp_blufi_register_callbacks(example_callbacks);
     if(ret){
         BLUFI_ERROR("%s blufi register failed, error code = %x\n", __func__, ret);

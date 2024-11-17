@@ -9,8 +9,7 @@
 #define _APPTASK_IF_H_
 
 
-
-void apptask_init(void);
+extern void apptask_init(void);
 
 
 

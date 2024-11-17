@@ -71,7 +71,7 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
     int ret;
     uint8_t type = data[0];
 
-    ESP_LOGI(BLUFI_TAG,"Entering DH negotiation handler...");
+    ESP_LOGI(BLUFI_TAG,"Entering DH negotiation handler...type:%x",type);
 
     if (blufi_sec == NULL) {
         BLUFI_ERROR("BLUFI Security is not initialized");
@@ -83,6 +83,7 @@ void blufi_dh_negotiate_data_handler(uint8_t *data, int len, uint8_t **output_da
     case SEC_TYPE_DH_PARAM_LEN:
     	 ESP_LOGI(BLUFI_TAG,"SEC_TYPE_DH_PARAM_LEN");
         blufi_sec->dh_param_len = ((data[1]<<8)|data[2]);
+        ESP_LOGI(BLUFI_TAG,"blufi_sec->dh_param_len:%x",blufi_sec->dh_param_len);
         if (blufi_sec->dh_param) {
             free(blufi_sec->dh_param);
             blufi_sec->dh_param = NULL;

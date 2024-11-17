@@ -8,3 +8,4 @@
 /ss
 /.clang-format
 /.clangd
+dependencies.lock

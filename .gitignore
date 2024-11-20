@@ -9,3 +9,4 @@
 /.clang-format
 /.clangd
 dependencies.lock
+.settings/org.eclipse.core.resources.prefs

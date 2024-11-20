@@ -5,6 +5,7 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 //#include "gpio_types.h"
+#include "blufi_if.h"
 #include "led_strip.h"
 #include "leds.h"
 
@@ -28,6 +29,30 @@ void led_Config(void)
 #ifdef CONFIG_BLINK_LED_RMT
 
 static led_strip_handle_t led_strip;
+
+void led_ConnIndicator(void)
+{
+	LedColorRGB_t Color;
+	if(blufi_GetBLEConStatus())
+	{
+		Color.RedC = 5;
+		Color.BlueC = 125;
+		Color.GreenC =  10;
+	}
+	else if(blufi_GetWiFiConStatus())
+	{
+		Color.RedC = 5;
+		Color.BlueC = 5;
+		Color.GreenC = 128;
+	}
+	else
+	{
+		Color.RedC = 128;
+		Color.BlueC = 0;
+		Color.GreenC =  0;
+	}
+	blink_led(Color);
+}
 
 void blink_led(LedColorRGB_t s_LED_Color)
 {

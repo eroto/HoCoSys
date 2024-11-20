@@ -38,7 +38,7 @@ TaskHandle_t *const TaskHandleConsole = NULL;
 #define TASK_PERIOD_100		100
 #define TASK_PERIOD_500		500
 
-
+void apptask_init(void);
 void apptask_5ms(void *pvParameters );
 void apptask_10ms(void *pvParameters );
 void apptask_20ms(void *pvParameters );

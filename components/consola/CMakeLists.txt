@@ -4,6 +4,8 @@ idf_component_register(SRCS "consola.c"
                     REQUIRES sense
                     REQUIRES esp_wifi
                     REQUIRES blufi
+                    REQUIRES rtc
+                    REQUIRES init
                     REQUIRES console
                     )
 

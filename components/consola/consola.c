@@ -8,12 +8,15 @@
 #include "sense_if.h"
 #include "esp_wifi.h"
 #include "blufi_if.h"
+#include "rtc_if.h"
+#include "init_if.h"
 #include "consola.h"
 
 
 #define PROMPT_STR CONFIG_IDF_TARGET
 
 extern int32_t get_rstCtr(void);
+extern void rtc_printLocTime(void);
 
 /* Command handler for user input */
 static int cmd_echo(int argc, char** argv)
@@ -59,6 +62,30 @@ static int ResetCtr(int argc, char **argv)
 	return 0;
 }
 
+static int loctime(int argc, char **argv)
+{
+	rtc_printLocTime();
+	return 0;
+}
+
+static int rstreason(int argc, char **argv)
+{
+	esp_reset_reason_t RstCode = esp_reset_reason();
+
+	printf("Reset Reason code:%s\n", ResetResons[RstCode]);
+	return 0;
+}
+
+// Register the "echo" command
+void register_loctime_command(void) {
+    const esp_console_cmd_t cmd = {
+        .command = "loctime",
+        .help = "Prints local time",
+        .hint = NULL,
+        .func = &loctime,
+    };
+    ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));
+}
 
 // Register the "echo" command
 void register_echo_command(void) {
@@ -116,6 +143,17 @@ static void register_ResetCtr(void)
 }
 
 
+static void register_rstreason(void)
+{
+    const esp_console_cmd_t cmd = {
+        .command = "rstreason",
+        .help = "Print the las reset reason",
+        .hint = NULL,
+        .func = &rstreason,
+    };
+    ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
+}
+
 /*
 static void register_version(void)
 {
@@ -156,6 +194,8 @@ void consola_Init(void)
 	    register_restart();
 	    register_ipconfig();
 	    register_ResetCtr();
+	    register_loctime_command();
+	    register_rstreason();
 	    //register_system();
 	    //register_wifi();
 	    //register_nvs();

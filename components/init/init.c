@@ -10,6 +10,7 @@
 #include <inttypes.h>
 #include "driver/temperature_sensor.h"
 #include "leds.h"
+#include "leds_if.h"
 #include "apptask_if.h"
 #include "sense_if.h"
 #include "I2C_if.h"
@@ -32,19 +33,8 @@ void PreShutdown(void)
 	sense_deinit();
 }
 
- char * ResetResons[11] = {
-		    "UNKNOWN",    //!< Reset reason can not be determined
-		    "POWERON",    //!< Reset due to power-on event
-		    "EXT",        //!< Reset by external pin (not applicable for ESP32)
-		    "SW",         //!< Software reset via esp_restart
-		    "PANIC",      //!< Software reset due to exception/panic
-		    "INT_WDT",    //!< Reset (software or hardware) due to interrupt watchdog
-		    "RST_TASK_WDT",   //!< Reset due to task watchdog
-		    "RST_WDT",        //!< Reset due to other watchdogs
-		    "RST_DEEPSLEEP",  //!< Reset after exiting deep sleep mode
-		    "RST_BROWNOUT",   //!< Brownout reset (software or hardware)
-		    "RST_SDIO"		//!< Reset over SDIO
- };
+
+
 
 uint8_t sysinit1(void)
 {
@@ -59,6 +49,7 @@ uint8_t sysinit1(void)
 
 	/*initialize Internal Temperature Sensor and analog inputs*/
 	result = sense_init();
+	ESP_LOGI(TAG, "sense_init initialized");
 
 	/*Initialize Digital Outputs*/
 	sense_init_DOs();
@@ -70,8 +61,9 @@ uint8_t sysinit1(void)
 
 	/*Initialize I2C*/
 	I2C_init();
-
-	/*Initialize I2C Master*/
+	ESP_LOGI(TAG, "IC2 initialized");
+	
+	/*Initialize I2C slave*/
 	ESP_ERROR_CHECK(i2c_slave_init());
 	ESP_LOGI(TAG, "i2c slave initialized");
 

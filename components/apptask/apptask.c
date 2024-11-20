@@ -8,7 +8,7 @@
 //#include "cmd_system.h"
 //#include "cmd_wifi.h"
 //#include "cmd_nvs.h"
-#include "rtc.h"
+#include "rtc_if.h"
 #include "freertos/FreeRTOS.h"
 #include "esp_task_wdt.h"
 #include "driver/gpio.h"
@@ -42,8 +42,7 @@ typedef struct
 
 }BLE_AppData;
 
-void apptask_init(void);
-void rtc_set_sntp(void);
+//void apptask_init(void);
 
 void apptask_init(void)
 {
@@ -228,101 +227,13 @@ void apptask_500ms(void *pvParameters )
 
 		//esp_task_wdt_add(TaskHandle500ms);
 
-		for(;;){
-			LedColorRGB_t Color;
-			if(blufi_GetBLEConStatus())
-			{
-				Color.RedC = 5;
-				Color.BlueC = 125;
-				Color.GreenC =  10;
-			}
-			else if(blufi_GetWiFiConStatus())
-			{
-				Color.RedC = 5;
-				Color.BlueC = 5;
-				Color.GreenC = 128;
-			}
-			else
-			{
-				Color.RedC = 128;
-				Color.BlueC = 0;
-				Color.GreenC =  0;
-			}
-
-			blink_led(Color);
-			//s_led_state = !s_led_state;
+		for(;;)
+		{
+			led_ConnIndicator();
 
 			if (count_1Sec == 2)
 			{
-			/*	switch(State){
-				case 0:
-					ESP_LOGI(TAG, "Enter IP address last number");
-					Next_state = 1;
-					break;
-
-				case 1:
-					UserInput = fgetc(stdin);
-					if (UserInput!=0xFF)
-					{
-						fputc(UserInput, stdout);
-						Next_state = 2;
-					}
-					else{
-						Next_state = 1;
-					}
-
-					//scanf("enter a number %d",&a);
-					//ESP_LOGI(TAG, "Number, entered %d",a);
-					//
-					//if(a < 255 && a >1){
-					//	Next_state = 2;
-					//	ESP_LOGI(TAG, "User Input: %d.",a);
-					//}
-					//else {Next_state = 1;}
-					//
-				break;
-				case 2:
-					if(UserInput < 255 && UserInput>1){
-						Next_state = 3;
-						//esp_task_wdt_reset();
-					}
-					else if(UserInput == 0){
-						Next_state = 1;
-					}
-					else{
-						ESP_LOGI(TAG, "%d is not a number. Enter A number between2 and 255",UserInput);
-						Next_state = 0;
-					}
-					break;
-				case 3:
-					ESP_LOGI(TAG, "Entered IP was : %d",UserInput);
-					ESP_LOGI(TAG, "IP Address to use 192.168.0.%d",UserInput);
-					Next_state = 4;
-					break;
-				case 4:
-					if(blufi_GetBLEConStatus() == false){
-						ESP_LOGI(TAG, "Open BlueFi App. to connect to BlueTooth with the device!");
-						Next_state = 4;
-					}
-					else{
-						Next_state = 5;
-					}
-					break;
-				case 5:
-					if(blufi_GetBLEConStatus() == true && blufi_GetWiFiConStatus()== false){
-						ESP_LOGI(TAG, "Click >>Connect<< on the BlueFi App. and select your WiFi Network");
-						Next_state = 5;
-					}
-					else{
-						ESP_LOGI(TAG, "WiFi Network Connected");
-						Next_state = 6;
-					}
-					break;
-				default:
-					Next_state = 4;
-					break;
-				}
-				State = Next_state;*/
+				rtc_sntp_SM();
 
 				if(level){
 					level = 0;
@@ -337,13 +248,9 @@ void apptask_500ms(void *pvParameters )
 			if(count_5Sec == 10){
 				temp = sense_getIntTempCelcius();
 				//ESP_LOGI(TAG, "Temperature value %.02f ℃",temp);
-				rtc_set_sntp();
 
 				 //= gettimeofday()
-
-
-
-								count_5Sec = 0;
+				 count_5Sec = 0;
 			}
 			else{
 			}

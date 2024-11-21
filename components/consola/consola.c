@@ -31,7 +31,7 @@ static int cmd_echo(int argc, char** argv)
 /*'restart' command restarts the program */
 static int restart(int argc, char **argv)
 {
-    ESP_LOGI(TAG, "Restarting");
+    printf("Restarting System now...\n");
     esp_restart();
 }
 
@@ -98,7 +98,7 @@ void register_echo_command(void) {
     ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));
 }
 
-// Register the "echo" command
+// Register the "temp" command
 void register_temp_command(void) {
     const esp_console_cmd_t cmd = {
         .command = "temp",
@@ -109,6 +109,7 @@ void register_temp_command(void) {
     ESP_ERROR_CHECK(esp_console_cmd_register(&cmd));
 }
 
+// Register the "restart" command
 static void register_restart(void)
 {
     const esp_console_cmd_t cmd = {
@@ -120,6 +121,7 @@ static void register_restart(void)
     ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
 }
 
+// Register the "ipconfig" command
 static void register_ipconfig(void)
 {
     const esp_console_cmd_t cmd = {
@@ -131,6 +133,7 @@ static void register_ipconfig(void)
     ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
 }
 
+// Register the "ResetCtr" command
 static void register_ResetCtr(void)
 {
     const esp_console_cmd_t cmd = {
@@ -142,7 +145,7 @@ static void register_ResetCtr(void)
     ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
 }
 
-
+// Register the "rstreason" command
 static void register_rstreason(void)
 {
     const esp_console_cmd_t cmd = {

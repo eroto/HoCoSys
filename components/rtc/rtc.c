@@ -121,5 +121,5 @@ void rtc_printLocTime(void)
 			
 	localtime_r(&now, &timeinfo);
 	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-	ESP_LOGI(TAG, "The current date/time in GDL Mexico is: %s", strftime_buf);	
+	printf("The current date/time in GDL Mexico is: %s\n", strftime_buf);
 }

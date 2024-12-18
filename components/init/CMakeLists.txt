@@ -5,5 +5,6 @@ idf_component_register(SRCS "init.c"
                     REQUIRES sense
                     REQUIRES I2C
                     REQUIRES blufi
+                    REQUIRES app_timers
                     REQUIRES consola)
 

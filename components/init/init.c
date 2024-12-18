@@ -16,6 +16,7 @@
 #include "I2C_if.h"
 #include "blufi_if.h"
 #include "consola_if.h"
+#include "app_timer_if.h"
 #include "init.h"
 
 //uint8_t s_led_state = 0;
@@ -128,6 +129,8 @@ uint8_t appinit2(void)
 	apptask_init();
 
 	consola_Init();
+	
+	app_timers_init();
 
 	uint8_t result = 0;
 

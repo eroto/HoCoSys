@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include "esp_log.h"
 #include "esp_console.h"
 #include "argtable3/argtable3.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
+#include "osi/future.h"
 #include "sense_if.h"
 #include "esp_wifi.h"
 #include "blufi_if.h"
@@ -33,6 +35,7 @@ static int restart(int argc, char **argv)
 {
     printf("Restarting System now...\n");
     esp_restart();
+    return 0;
 }
 
 /* Get chip internal temperature in ºC */
@@ -58,7 +61,7 @@ static int ipconfig(int argc, char **argv)
 static int ResetCtr(int argc, char **argv)
 {
 	int32_t ctr = get_rstCtr();
-	printf("Number of restarts:%li\n",ctr);
+	printf("Number of restarts:%"PRIu32"\n",ctr);
 	return 0;
 }
 
@@ -75,6 +78,28 @@ static int rstreason(int argc, char **argv)
 	printf("Reset Reason code:%s\n", ResetResons[RstCode]);
 	return 0;
 }
+
+static int settmr(int argc, char **argv)
+{
+	time_t future;
+	struct tm tinfo;
+	
+	tinfo.tm_year = 2024 - 1900;
+	tinfo.tm_mon = 12;
+	tinfo.tm_mday = 17;
+	tinfo.tm_hour = 21;
+	tinfo.tm_min = 02;
+	tinfo.tm_sec = 00;
+	
+	
+	// Convert struct tm to time_t
+	future = mktime(&tinfo);
+	
+	(void)rtc_get_FutureDate_sec(&future);
+	
+	return 0;
+}
+
 
 // Register the "echo" command
 void register_loctime_command(void) {
@@ -157,6 +182,18 @@ static void register_rstreason(void)
     ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
 }
 
+// Register the "settmr" command
+static void register_settmr(void)
+{
+	    const esp_console_cmd_t cmd = {
+        .command = "settmr",
+        .help = "set the date to set a timer",
+        .hint = NULL,
+        .func = &settmr,
+    };
+    ESP_ERROR_CHECK( esp_console_cmd_register(&cmd) );
+}
+
 /*
 static void register_version(void)
 {
@@ -199,6 +236,7 @@ void consola_Init(void)
 	    register_ResetCtr();
 	    register_loctime_command();
 	    register_rstreason();
+	    register_settmr();
 	    //register_system();
 	    //register_wifi();
 	    //register_nvs();

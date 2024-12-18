@@ -146,7 +146,7 @@ void apptask_5ms(void *pvParameters )
 			xStatus = xQueueReceive( xQueue, &lReceivedValue, 5);
 			//ESP_LOGI(TAG, "val of ReceivedValue[0]:%i",lReceivedValue.data[0]);
 			esp_log_buffer_hex("Received ", lReceivedValue.data, lReceivedValue.data_len);
-			ESP_LOGI(TAG, "length of ReceivedValue: %ld",lReceivedValue.data_len);
+			ESP_LOGI(TAG, "length of ReceivedValue: %" PRIu32 "\n",lReceivedValue.data_len);
 		}
 
 	}
@@ -245,6 +245,7 @@ void apptask_500ms(void *pvParameters )
 				//gpio_set_level(DO_00, level);
 				count_1Sec = 0;
 			}else{}
+			
 			if(count_5Sec == 10){
 				temp = sense_getIntTempCelcius();
 				//ESP_LOGI(TAG, "Temperature value %.02f ℃",temp);

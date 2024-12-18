@@ -908,7 +908,7 @@ bool blufi_GetBLEConStatus(void)
 
 bool blufi_GetWiFiConStatus(void)
 {
-	return gl_sta_connected;
+	return (gl_sta_connected && gl_sta_got_ip);
 }
 
 

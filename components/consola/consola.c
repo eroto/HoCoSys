@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
@@ -79,14 +80,72 @@ static int rstreason(int argc, char **argv)
 	return 0;
 }
 
+uint8_t splitDays(const char *input, char days[])
+{
+	int j = 0;
+	uint8_t count = 0;
+	for (int i = 0; input[i] != '\0'; i++)
+	{
+		if (input[i] != ' ')
+		{
+			days[j++] = input[i];
+			count++;
+		}
+	}
+	
+	return count;
+}
+
 static int settmr(int argc, char **argv)
 {
 	time_t future;
 	struct tm tinfo;
 	
+	char input[100];
+	char days[13]={[0 ... 12]= 0};
+	char time[6];
+	int duration;
+	uint8_t num_of_days = 0;
+	
+	// Prompt user for input
+	printf("Enter the days of the week (e.g., L M I J V S D): ");
+	fgets(input, sizeof(input), stdin);
+	input[strcspn(input, "\n")] = '\0'; // Remove trailing newline character
+	num_of_days = splitDays(input, days);
+	
+	//sscanf(input, "%9s", day);
+	
+	printf("Enter the time (e.g., 14:30): ");
+	//fgets(input, sizeof(input), stdin);
+	//sscanf(input, "%5s", time);
+	scanf("%s",time);
+	
+	printf("Enter the duration in minutes (e.g., 30): ");
+	fgets(input,sizeof(input),stdin);
+	sscanf("%d", &duration);
+	
+	// Display the input received
+	printf("\nDays array: ");
+	for (int i = 0; i < num_of_days; i++)
+	{ printf("%c ", days[i]); }
+	printf("\n");
+	
+	printf("\nYou entered:\n");
+	printf("Days of the week: %s\n", days);
+	printf("Time: %s\n", time);
+	
+	printf("Duration: %d minutes\n", duration);
+	
+	// Print the number of arguments
+	printf("Number of arguments: %d\n", argc);
+	
+	// Print all the arguments
+	for (int i = 0; i < argc; i++)
+	{ printf("Argument %d: %s\n", i, argv[i]); }
+	
 	tinfo.tm_year = 2024 - 1900;
 	tinfo.tm_mon = 12;
-	tinfo.tm_mday = 17;
+	tinfo.tm_mday = 18;
 	tinfo.tm_hour = 21;
 	tinfo.tm_min = 02;
 	tinfo.tm_sec = 00;

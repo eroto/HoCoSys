@@ -146,6 +146,11 @@ static uint8_t err_ctr = 0;
 	timeStates = Next_state;
 }
 
+static void rtc_getCurrentTime(void)
+{
+	time(&time_now);
+}
+
 void rtc_printLocTime(void)
 {
 	time_t now;
@@ -158,21 +163,63 @@ void rtc_printLocTime(void)
 	localtime_r(&now, &timeinfo);
 	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
 	printf("The current date/time in GDL Mexico is: %s\n", strftime_buf);
-	printf(" The day of the week is:%i\n", rtc_get_WeekDay(&now));
+	printf(" The day of the week is:%i\n", rtc_get_WeekDay());
 }
 
-int rtc_get_WeekDay(time_t *time_now)
+int rtc_get_sec(void)
 {
 	struct tm timeinfo;
-	localtime_r(time_now, &timeinfo);
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
+	return timeinfo.tm_sec;
+}
+
+int rtc_get_min(void)
+{
+	struct tm timeinfo;
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
+	return timeinfo.tm_min;
+}
+
+int rtc_get_hour(void)
+{
+	struct tm timeinfo;
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
+	return timeinfo.tm_hour;
+}
+
+int rtc_get_WeekDay(void)
+{
+	struct tm timeinfo;
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
 	return timeinfo.tm_wday;
 }
 
-int rtc_get_MonthDay(time_t *time_now)
+int rtc_get_MonthDay(void)
 {
 	struct tm timeinfo;
-	localtime_r(time_now, &timeinfo);
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
 	return timeinfo.tm_mday;
+}
+
+int rtc_get_Month(void)
+{
+	struct tm timeinfo;
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
+	return timeinfo.tm_mon;
+}
+
+int rtc_get_Year(void)
+{
+	struct tm timeinfo;
+	rtc_getCurrentTime();
+	localtime_r(&time_now, &timeinfo);
+	return timeinfo.tm_year;
 }
 
 uint64_t rtc_get_FutureDate_sec(time_t *future_time)
@@ -189,11 +236,26 @@ uint64_t rtc_get_FutureDate_sec(time_t *future_time)
 	}
 	else
 	{
-		printf("Future time given is not in the future!");
+		printf("Future time given is not in the future!\n");
 		DeltaTime = 0;
 	}
 	
 	return DeltaTime;
 }
 
+uint8_t splitDays(const char *input, char *days)
+{
+	int j = 0;
+	int i = 0;
+	uint8_t count = 0;
+	for (i = 0; input[i] != '\0'; i++)
+	{
+		if (input[i] != ' ')
+		{
+			days[j++] = input[i];
+			count++;
+		}
+	}	
+	return count;
+}
 

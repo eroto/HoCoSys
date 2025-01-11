@@ -14,13 +14,14 @@
 #include "driver/gpio.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
+#include "driver/gptimer.h"
 #include "esp_log.h"
 #include "linenoise/linenoise.h"
 #include "leds.h"
 #include "sense_if.h"
 #include "I2C_if.h"
 #include "esp_blufi_api.h"
-
+#include "app_timer_if.h"
 #include "blufi_if.h"
 #include "apptask.h"
 //#include "apptask_if.h"
@@ -131,7 +132,7 @@ void apptask_init(void)
 void apptask_5ms(void *pvParameters )
 {
 	TickType_t xLastWakeTime = 0;
-	BaseType_t xStatus;
+	BaseType_t xStatus = 0;
 	const TickType_t xPeriod_5 = pdMS_TO_TICKS(TASK_PERIOD_5);
 	//const TickType_t xTicksToWait = pdMS_TO_TICKS(5);
 
@@ -144,9 +145,18 @@ void apptask_5ms(void *pvParameters )
 		{
 			ESP_LOGI(TAG, "Queue should have been empty!\r\n");
 			xStatus = xQueueReceive( xQueue, &lReceivedValue, 5);
-			//ESP_LOGI(TAG, "val of ReceivedValue[0]:%i",lReceivedValue.data[0]);
-			esp_log_buffer_hex("Received ", lReceivedValue.data, lReceivedValue.data_len);
-			ESP_LOGI(TAG, "length of ReceivedValue: %" PRIu32 "\n",lReceivedValue.data_len);
+			if(xStatus)
+			{
+				//ESP_LOGI(TAG, "val of ReceivedValue[0]:%i",lReceivedValue.data[0]);
+				esp_log_buffer_hex("Received ", lReceivedValue.data, lReceivedValue.data_len);
+				ESP_LOGI(TAG, "length of ReceivedValue: %" PRIu32 "\n",lReceivedValue.data_len);
+			}
+		}
+		/*Irrigation timer alarm flag*/
+		if (Alarm_flag == 1)
+		{
+			Alarm_flag = 0;
+			printf("Irrigation Alarm completed\n");
 		}
 
 	}

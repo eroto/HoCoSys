@@ -1,6 +1,8 @@
+#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <time.h>
 #include "esp_log.h"
 #include "esp_console.h"
@@ -13,6 +15,7 @@
 #include "blufi_if.h"
 #include "rtc_if.h"
 #include "init_if.h"
+#include "app_timer_if.h"
 #include "consola.h"
 
 
@@ -80,81 +83,55 @@ static int rstreason(int argc, char **argv)
 	return 0;
 }
 
-uint8_t splitDays(const char *input, char days[])
-{
-	int j = 0;
-	uint8_t count = 0;
-	for (int i = 0; input[i] != '\0'; i++)
-	{
-		if (input[i] != ' ')
-		{
-			days[j++] = input[i];
-			count++;
-		}
-	}
-	
-	return count;
-}
-
 static int settmr(int argc, char **argv)
 {
 	time_t future;
 	struct tm tinfo;
-	
-	char input[100];
-	char days[13]={[0 ... 12]= 0};
-	char time[6];
-	int duration;
+	char days[7];
 	uint8_t num_of_days = 0;
 	
-	// Prompt user for input
-	printf("Enter the days of the week (e.g., L M I J V S D): ");
-	fgets(input, sizeof(input), stdin);
-	input[strcspn(input, "\n")] = '\0'; // Remove trailing newline character
-	num_of_days = splitDays(input, days);
+	if (argc != 4)
+	{
+		printf("Use the format day time duration, e.g. LIV 06:30 45\n");
+		fprintf(stderr, "Usage: %s days time duration\n", argv[0]);
+	}
+	else
+	{
+		// Print all the arguments
+		num_of_days = splitDays(argv[1], days);
+		char *time = argv[2]; 
+		int duration = atoi(argv[3]); 
+		
+		for(uint8_t i = 0; i < num_of_days; i++)
+		{printf("Day %i: %c\n",i, days[i]);}
+		
+		printf("Time: %s\n", time);
+		printf("Duration: %d minutes\n", duration);
+		//setenv("TZ", "CST+6", 1);
+		//localtime_r(&now, &tinfo);
+		
+		tinfo.tm_year = rtc_get_Year();
+		tinfo.tm_mon = rtc_get_Month();
+		tinfo.tm_mday = rtc_get_MonthDay();
+		tinfo.tm_wday = rtc_get_WeekDay();
+		tinfo.tm_hour = rtc_get_hour();
+		tinfo.tm_min = rtc_get_min();
+		tinfo.tm_sec = rtc_get_sec();
+		
+		printf("Week Day:%i\n",tinfo.tm_wday);
+		printf("Day:%i\n",tinfo.tm_mday);
+		printf("Month:%i\n",tinfo.tm_mon);
+		printf("Year:%i\n",tinfo.tm_year);
+		
+		// Convert struct tm to time_t
+		future = mktime(&tinfo);
+		
+		/*Save user inputs Days, Duration and Time*/
+		
+		(void)rtc_get_FutureDate_sec(&future);
+	}
 	
-	//sscanf(input, "%9s", day);
-	
-	printf("Enter the time (e.g., 14:30): ");
-	//fgets(input, sizeof(input), stdin);
-	//sscanf(input, "%5s", time);
-	scanf("%s",time);
-	
-	printf("Enter the duration in minutes (e.g., 30): ");
-	fgets(input,sizeof(input),stdin);
-	sscanf("%d", &duration);
-	
-	// Display the input received
-	printf("\nDays array: ");
-	for (int i = 0; i < num_of_days; i++)
-	{ printf("%c ", days[i]); }
-	printf("\n");
-	
-	printf("\nYou entered:\n");
-	printf("Days of the week: %s\n", days);
-	printf("Time: %s\n", time);
-	
-	printf("Duration: %d minutes\n", duration);
-	
-	// Print the number of arguments
-	printf("Number of arguments: %d\n", argc);
-	
-	// Print all the arguments
-	for (int i = 0; i < argc; i++)
-	{ printf("Argument %d: %s\n", i, argv[i]); }
-	
-	tinfo.tm_year = 2024 - 1900;
-	tinfo.tm_mon = 12;
-	tinfo.tm_mday = 18;
-	tinfo.tm_hour = 21;
-	tinfo.tm_min = 02;
-	tinfo.tm_sec = 00;
-	
-	
-	// Convert struct tm to time_t
-	future = mktime(&tinfo);
-	
-	(void)rtc_get_FutureDate_sec(&future);
+	start_irrigation_duration_tmr();
 	
 	return 0;
 }
@@ -246,7 +223,7 @@ static void register_settmr(void)
 {
 	    const esp_console_cmd_t cmd = {
         .command = "settmr",
-        .help = "set the date to set a timer",
+        .help = "set the date to set a timer in the format\nDay   Time   Duration (min)\nLIV   06:30   45",
         .hint = NULL,
         .func = &settmr,
     };

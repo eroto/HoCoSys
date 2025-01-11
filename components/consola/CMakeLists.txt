@@ -6,6 +6,7 @@ idf_component_register(SRCS "consola.c"
                     REQUIRES blufi
                     REQUIRES rtc
                     REQUIRES init
+                    REQUIRES app_timers
                     REQUIRES console
                     )
 

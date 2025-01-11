@@ -12,8 +12,15 @@
 
 extern void rtc_sntp_SM(void);
 extern void rtc_printLocTime(void);
-extern int rtc_get_WeekDay(time_t *time_now);
-extern int rtc_get_MonthDay(time_t *time_now);
-uint64_t rtc_get_FutureDate_sec(time_t *future_time);
+extern int rtc_get_hour(void);
+extern int rtc_get_min(void);
+extern int rtc_get_sec(void);
+extern int rtc_get_WeekDay(void);
+extern int rtc_get_MonthDay(void);
+extern int rtc_get_Month(void);
+extern int rtc_get_Year(void);
+extern uint8_t splitDays(const char *input, char *days);
+extern uint64_t rtc_get_FutureDate_sec(time_t *future_time);
+
 
 #endif /* COMPONENTS_RTC_INCLUDE_RTC_IF_H_ */

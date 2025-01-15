@@ -19,7 +19,6 @@ extern int rtc_get_WeekDay(void);
 extern int rtc_get_MonthDay(void);
 extern int rtc_get_Month(void);
 extern int rtc_get_Year(void);
-extern uint8_t splitDays(const char *input, char *days);
 extern uint64_t rtc_get_FutureDate_sec(time_t *future_time);
 
 

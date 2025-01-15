@@ -34,7 +34,7 @@ int rtc_get_MonthDay(void);
 int rtc_get_Month(void);
 int rtc_get_Year(void);
 uint64_t rtc_get_FutureDate_sec(time_t *future_time);
-uint8_t splitDays(const char *input, char *days);
+uint8_t splitDays(const char *input, uint8_t *days);
 
 static void rtc_getCurrentTime(void);
 

@@ -1,12 +1,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <inttypes.h>
 #include <time.h>
 #include <sys/time.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "esp_bit_defs.h"
 #include "esp_system.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -20,6 +22,7 @@
 
 
 #include "blufi_if.h"
+#include "rom/uart.h"
 #include "rtc.h"
 #include "rtc_if.h"
 
@@ -243,19 +246,5 @@ uint64_t rtc_get_FutureDate_sec(time_t *future_time)
 	return DeltaTime;
 }
 
-uint8_t splitDays(const char *input, char *days)
-{
-	int j = 0;
-	int i = 0;
-	uint8_t count = 0;
-	for (i = 0; input[i] != '\0'; i++)
-	{
-		if (input[i] != ' ')
-		{
-			days[j++] = input[i];
-			count++;
-		}
-	}	
-	return count;
-}
+
 

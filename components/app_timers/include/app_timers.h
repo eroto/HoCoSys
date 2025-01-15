@@ -33,6 +33,11 @@ uint8_t start_irrigation_duration_tmr(void);
 bool app_timer_is_running(gptimer_handle_t app_timer);
 uint8_t stop_irrigation_duration_tmr(void);
 static bool irrigation_duration_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx);
+bool GET_IrrigationSchedule(void);
+void SET_IrrigationSchedule(bool value);
+uint8_t splitDays(const char *input);
+uint8_t irrigation_task();
+void splitHrsMin(char * t_m);
 
 
 #endif /* APP_TIMERS_H_ */

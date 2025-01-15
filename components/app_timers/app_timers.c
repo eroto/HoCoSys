@@ -4,8 +4,29 @@
 #include <inttypes.h>
 #include "freertos/FreeRTOS.h"
 #include "driver/gptimer.h"
+#include "rtc_if.h"
 #include "app_timers.h"
 #include "driver/gptimer_etm.h"
+
+uint8_t days[7];
+
+typedef struct 
+{
+	uint8_t b0 :1;
+	uint8_t b1 :1;
+	uint8_t b2 :1;
+	uint8_t b3 :1;
+	uint8_t b4 :1;
+	uint8_t b5 :1;
+	uint8_t b6 :1;
+	uint8_t b7 :1;
+}uin8_bits_t;
+
+union
+{
+	uint8_t byte;
+	uin8_bits_t irrigation_bits;
+}irrigation_flags; 
 
 gptimer_handle_t irrigation_timers_hdl[NUM_TMRS_HDL] ={[0 ... NUM_TMRS_HDL-1] = NULL};
 //gptimer_handle_t irrigation_timer = NULL;
@@ -44,6 +65,11 @@ uint8_t app_timers_init(void)
 		ESP_ERROR_CHECK(gptimer_new_timer( &irrigation_cfg, &irrigation_timers_hdl[i]));
 	}
 	*/
+	
+	for(uint8_t i = 0; i < 7; i++)
+	{
+		days[i]=' ';
+	} 
 	
 	ESP_ERROR_CHECK(gptimer_new_timer( &irrigation_cfg, &irrigation_timers_hdl[IRRIGATION_DURATION_TMR]));
 	
@@ -132,4 +158,141 @@ bool app_timer_is_running(gptimer_handle_t app_timer)
 	return running;
 }
 
+
+void SET_IrrigationSchedule(bool value)
+{
+	irrigation_flags.irrigation_bits.b0 = value;
+}
+
+bool GET_IrrigationSchedule(void)
+{
+	return irrigation_flags.irrigation_bits.b0;
+}
+
+
+uint8_t irrigation_task()
+{	
+	int C_weekDay = 0;
+	int C_hr = 0;
+	int C_min = 0;
+	int C_seg = 0;
+	int C_month = 0;
+	int T_Hr = 0;
+	int T_min = 0;
+	int T_sec = 0;
+	//int weekday = 0;
+	
+	if (GET_IrrigationSchedule())
+	{
+		/*get current day and time*/
+
+		 
+		 C_weekDay = rtc_get_WeekDay();
+		 C_hr = rtc_get_hour();
+		 C_min = rtc_get_min();
+		 C_seg = rtc_get_sec();
+		 
+		 
+		 /*
+		 T_weekDay = days[0]
+		 T_Hr =
+		 T_min =
+		 T_sec =  
+		 
+		 (C_weekDay - 7) + T_WD
+		
+		if()
+		 0;
+		*/
+		
+		/* get the days to irrigate*/
+		
+
+		
+		/*get the time to start irrigation*/
+		
+		
+		/*get the irrigation time*/
+	}
+	else 
+	{/* do nothing irrigation schedule not set*/}
+	
+	return 0;
+	
+}
+
+uint8_t splitDays(const char *input)
+{
+	int j = 0;
+	int i = 0;
+	uint8_t count = 0;
+	for (i = 0; input[i] != '\0'; i++)
+	{
+		/*There is not user input validity check "LMIJVSD"
+		since the input will be limited by the UI input*/
+		if (input[i] != ' ')
+		{
+			switch(input[i])
+			{
+				case 'L':
+					days[j++]=0;
+					count++;
+				break;
+				
+				case 'M':
+					days[j++]=1;
+					count++;
+				break;
+				
+				case 'I':
+					days[j++]=2;
+					count++;
+				break;
+				
+				case 'J':
+					days[j++]=3;
+					count++;
+				break;
+				
+				case 'V':
+					days[j++]=4;
+					count++;
+				break;
+				
+				case 'S':
+					days[j++]=5;
+					count++;
+				break;
+				
+				case 'D':
+					days[j++]=6;
+					count++;
+				break;
+				
+				default:
+					/*Do nothing*/
+				break;
+			}
+		}
+	}
+	
+	for(uint8_t i = 0; i < count; i++)
+	{
+		printf("Day %i: %i\n",i, days[i]);
+	}
+			
+	return count;
+}
+
+void splitHrsMin(char * t_m)
+{
+	int hr = 0;
+	int min = 0;
+	
+	hr=atoi(&t_m[0]);
+	
+	min=atoi(&t_m[3]);
+	printf("Hr: %i\n",hr);
+	printf("min: %i\n",min);
+}
 

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
 #include "esp_log.h"
@@ -87,7 +88,6 @@ static int settmr(int argc, char **argv)
 {
 	time_t future;
 	struct tm tinfo;
-	char days[7];
 	uint8_t num_of_days = 0;
 	
 	if (argc != 4)
@@ -98,14 +98,12 @@ static int settmr(int argc, char **argv)
 	else
 	{
 		// Print all the arguments
-		num_of_days = splitDays(argv[1], days);
+		num_of_days = splitDays(argv[1]);
 		char *time = argv[2]; 
 		int duration = atoi(argv[3]); 
 		
-		for(uint8_t i = 0; i < num_of_days; i++)
-		{printf("Day %i: %c\n",i, days[i]);}
-		
 		printf("Time: %s\n", time);
+		splitHrsMin(time);
 		printf("Duration: %d minutes\n", duration);
 		//setenv("TZ", "CST+6", 1);
 		//localtime_r(&now, &tinfo);
@@ -131,11 +129,13 @@ static int settmr(int argc, char **argv)
 		(void)rtc_get_FutureDate_sec(&future);
 	}
 	
+	SET_IrrigationSchedule(true);
+	
 	start_irrigation_duration_tmr();
+	
 	
 	return 0;
 }
-
 
 // Register the "echo" command
 void register_loctime_command(void) {

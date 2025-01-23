@@ -38,6 +38,8 @@ void SET_IrrigationSchedule(bool value);
 uint8_t splitDays(const char *input);
 uint8_t irrigation_task();
 void splitHrsMin(char * t_m);
+void Set_NumOfIrrigationDays(uint8_t days);
+uint8_t Get_NumOfIrrigationDays(void);
 
 
 #endif /* APP_TIMERS_H_ */

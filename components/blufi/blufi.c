@@ -866,7 +866,7 @@ static void bluefi_event_callback(esp_blufi_cb_event_t event, esp_blufi_cb_param
     }
     case ESP_BLUFI_EVENT_RECV_CUSTOM_DATA:
         BLUFI_INFO("Recv Custom Data %" PRIu32 "\n", param->custom_data.data_len);
-        esp_log_buffer_hex("Custom Data", param->custom_data.data, param->custom_data.data_len);
+        ESP_LOG_BUFFER_HEX("Custom Data", param->custom_data.data, param->custom_data.data_len);
         memcpy(&lValueToSend.data,&param->custom_data.data,param->custom_data.data_len);
         //lValueToSend.data = param->custom_data.data;
         lValueToSend.data_len = param->custom_data.data_len;

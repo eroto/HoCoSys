@@ -148,7 +148,7 @@ void apptask_5ms(void *pvParameters )
 			if(xStatus)
 			{
 				//ESP_LOGI(TAG, "val of ReceivedValue[0]:%i",lReceivedValue.data[0]);
-				esp_log_buffer_hex("Received ", lReceivedValue.data, lReceivedValue.data_len);
+				ESP_LOG_BUFFER_HEX("Received ", lReceivedValue.data, lReceivedValue.data_len);
 				ESP_LOGI(TAG, "length of ReceivedValue: %" PRIu32 "\n",lReceivedValue.data_len);
 			}
 		}
@@ -240,6 +240,8 @@ void apptask_500ms(void *pvParameters )
 		for(;;)
 		{
 			led_ConnIndicator();
+			
+			irrigation_task();
 
 			if (count_1Sec == 2)
 			{

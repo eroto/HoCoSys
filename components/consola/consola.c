@@ -99,6 +99,7 @@ static int settmr(int argc, char **argv)
 	{
 		// Print all the arguments
 		num_of_days = splitDays(argv[1]);
+		Set_NumOfIrrigationDays(num_of_days); 
 		char *time = argv[2]; 
 		int duration = atoi(argv[3]); 
 		

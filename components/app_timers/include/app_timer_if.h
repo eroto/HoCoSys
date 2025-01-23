@@ -21,5 +21,7 @@ extern void SET_IrrigationSchedule(bool value);
 extern uint8_t splitDays(const char *input);
 extern uint8_t irrigation_task();
 extern void splitHrsMin(char * t_m);
+extern void Set_NumOfIrrigationDays(uint8_t days);
+extern uint8_t Get_NumOfIrrigationDays(void);
 
 #endif /* APP_TIMER_IF_H_ */

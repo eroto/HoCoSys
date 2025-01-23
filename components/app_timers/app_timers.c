@@ -8,7 +8,25 @@
 #include "app_timers.h"
 #include "driver/gptimer_etm.h"
 
+
+#define HORAS (24u)
+#define MINUTOS (60u)
+#define SEGUNDOS (60u)
+
+#define MONDAY		1
+#define TUESDAY		2
+#define WEDNESDAY	3
+#define THURSDAY	4
+#define FRIDAY		5
+#define SATURDAY	6
+#define SUNDAY		7
+
+
+
 uint8_t days[7];
+int irrigation_hr = 0;
+int irrigation_min = 0;
+uint8_t NumOfIrrigationDays = 0;
 
 typedef struct 
 {
@@ -169,6 +187,15 @@ bool GET_IrrigationSchedule(void)
 	return irrigation_flags.irrigation_bits.b0;
 }
 
+void Set_NumOfIrrigationDays(uint8_t days)
+{
+	NumOfIrrigationDays = days;
+}
+
+uint8_t Get_NumOfIrrigationDays(void)
+{
+	return NumOfIrrigationDays;
+}
 
 uint8_t irrigation_task()
 {	
@@ -176,43 +203,83 @@ uint8_t irrigation_task()
 	int C_hr = 0;
 	int C_min = 0;
 	int C_seg = 0;
-	int C_month = 0;
-	int T_Hr = 0;
+	int T_weekDay = 0;
+	int T_hr = 0;
 	int T_min = 0;
-	int T_sec = 0;
+	int seconds_to_irrigation = 0;
+	uint8_t i = 0;
 	//int weekday = 0;
 	
 	if (GET_IrrigationSchedule())
 	{
-		/*get current day and time*/
-
-		 
+		/*get current day and time*/		 
 		 C_weekDay = rtc_get_WeekDay();
 		 C_hr = rtc_get_hour();
 		 C_min = rtc_get_min();
 		 C_seg = rtc_get_sec();
+		 T_hr = irrigation_hr;
+		 T_min = irrigation_min;
 		 
-		 
-		 /*
-		 T_weekDay = days[0]
-		 T_Hr =
-		 T_min =
-		 T_sec =  
-		 
-		 (C_weekDay - 7) + T_WD
+		 for(i = 0; i < NumOfIrrigationDays; i++)
+		 {
+			 /*Get the irrigation request from the user*/
+			 T_weekDay = days[i];
+			
+			 /*Irrigation day selected is the same as the currenty day*/
+			 if(T_weekDay == C_weekDay)
+			 {
+				/*Hour selected to irritate is th same as the current hour*/
+				if (T_hr == C_hr)
+				{
+					if(T_min > C_min)
+					{
+						/*Calculate seconds to irrigation*/
+						seconds_to_irrigation = ((T_min - C_min)*SEGUNDOS)- C_seg;
+					}
+					else if(T_min == C_min)
+					{seconds_to_irrigation = 1;}
+					
+					else
+					{
+						if(NumOfIrrigationDays == 1)
+						{/*TODO: Do the calculus of seconds to irrigation*/}
+					}
+				}
+					
+				/*Hour selected to irritate is greater than current hour*/
+				else if(T_hr > C_hr)
+				{
+					seconds_to_irrigation = ((((((T_hr - C_hr) * MINUTOS) - C_min) + T_min)*SEGUNDOS)- C_seg);
+				}
+				else
+				{/*Target hour is less than current hour, that means time passed and next day shall
+				be checked and time recalculated*/
+					if(NumOfIrrigationDays == 1)
+					{
+						/*There is no more days to check, compute the seconds to irrigate*/
+						seconds_to_irrigation = (((((((((7 - C_weekDay) + T_weekDay) * HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;
+					}
+					/* Go for to the next day programmed*/
+				}
+			 }
+			 /*Irrigation day selected is less than current day*/
+			 else if(T_weekDay < C_weekDay)
+			 {
+				if(NumOfIrrigationDays == 1)
+				{
+					/*There is no more days to check, compute the seconds to irrigate*/
+					seconds_to_irrigation = (((((((((7 - C_weekDay) + T_weekDay) * HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;	
+				}
+			 	/* Go for the next day programmed*/
+			 	
+			 }
+			 else/*Irrigation day selected is grater then current day*/
+			 {
+				seconds_to_irrigation = ((((((((T_weekDay - C_weekDay)* HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;
+			 }
+		 }
 		
-		if()
-		 0;
-		*/
-		
-		/* get the days to irrigate*/
-		
-
-		
-		/*get the time to start irrigation*/
-		
-		
-		/*get the irrigation time*/
+		printf("seconds_to_irrigation: %i", seconds_to_irrigation); 
 	}
 	else 
 	{/* do nothing irrigation schedule not set*/}
@@ -220,6 +287,7 @@ uint8_t irrigation_task()
 	return 0;
 	
 }
+
 
 uint8_t splitDays(const char *input)
 {
@@ -235,37 +303,37 @@ uint8_t splitDays(const char *input)
 			switch(input[i])
 			{
 				case 'L':
-					days[j++]=0;
+					days[j++]= MONDAY;
 					count++;
 				break;
 				
 				case 'M':
-					days[j++]=1;
+					days[j++]=TUESDAY;
 					count++;
 				break;
 				
 				case 'I':
-					days[j++]=2;
+					days[j++]=WEDNESDAY;
 					count++;
 				break;
 				
 				case 'J':
-					days[j++]=3;
+					days[j++]=THURSDAY;
 					count++;
 				break;
 				
 				case 'V':
-					days[j++]=4;
+					days[j++]= FRIDAY;
 					count++;
 				break;
 				
 				case 'S':
-					days[j++]=5;
+					days[j++]= SATURDAY;
 					count++;
 				break;
 				
 				case 'D':
-					days[j++]=6;
+					days[j++]= SUNDAY;
 					count++;
 				break;
 				
@@ -275,7 +343,7 @@ uint8_t splitDays(const char *input)
 			}
 		}
 	}
-	
+
 	for(uint8_t i = 0; i < count; i++)
 	{
 		printf("Day %i: %i\n",i, days[i]);
@@ -286,13 +354,8 @@ uint8_t splitDays(const char *input)
 
 void splitHrsMin(char * t_m)
 {
-	int hr = 0;
-	int min = 0;
-	
-	hr=atoi(&t_m[0]);
-	
-	min=atoi(&t_m[3]);
-	printf("Hr: %i\n",hr);
-	printf("min: %i\n",min);
+
+	irrigation_hr = atoi(&t_m[0]);
+	irrigation_min = atoi(&t_m[3]);
 }
 

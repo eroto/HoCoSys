@@ -1,6 +1,7 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -16,7 +17,8 @@
 #include "blufi_if.h"
 #include "rtc_if.h"
 #include "init_if.h"
-#include "app_timer_if.h"
+#include "driver/gptimer.h"
+#include "app_timers.h"
 #include "consola.h"
 
 
@@ -25,6 +27,10 @@
 extern int32_t get_rstCtr(void);
 extern void rtc_printLocTime(void);
 
+BaseType_t xQueueStatus;
+extern QueueHandle_t xIrrigationQueue;
+s_IrrigationInfo_t user_input;
+s_IrrigationInfo_t* ptr_user_input;
 /* Command handler for user input */
 static int cmd_echo(int argc, char** argv)
 {
@@ -86,9 +92,8 @@ static int rstreason(int argc, char **argv)
 
 static int settmr(int argc, char **argv)
 {
-	time_t future;
+	//time_t future;
 	struct tm tinfo;
-	uint8_t num_of_days = 0;
 	
 	if (argc != 4)
 	{
@@ -97,15 +102,30 @@ static int settmr(int argc, char **argv)
 	}
 	else
 	{
-		// Print all the arguments
-		num_of_days = splitDays(argv[1]);
-		Set_NumOfIrrigationDays(num_of_days); 
-		char *time = argv[2]; 
-		int duration = atoi(argv[3]); 
+		user_input.irrigation_days = argv[1];
+		user_input.irrigation_time = argv[2];
+		user_input.irrigation_duration = argv[3];
 		
-		printf("Time: %s\n", time);
-		splitHrsMin(time);
-		printf("Duration: %d minutes\n", duration);
+		if(xIrrigationQueue != 0)
+		{
+			ptr_user_input = &user_input;
+			xQueueStatus = xQueueSendToBack(xIrrigationQueue,(void *) &ptr_user_input, ( TickType_t )10);
+			if(xQueueStatus != pdPASS)
+	        {
+	        	printf( "Could not send to the irrigation queue.\r\n" );
+	        }
+        }
+		SET_IrrigationTimeCalc(false);
+		
+		// Print all the arguments
+		//num_of_days = splitDays(argv[1]);
+		//Set_NumOfIrrigationDays(num_of_days); 
+		//char *time = argv[2]; 
+		//int duration = atoi(argv[3]); 
+		
+		//printf("Time: %s\n", time);
+		//splitHrsMin(time);
+		//printf("Duration: %d minutes\n", duration);
 		//setenv("TZ", "CST+6", 1);
 		//localtime_r(&now, &tinfo);
 		
@@ -117,22 +137,22 @@ static int settmr(int argc, char **argv)
 		tinfo.tm_min = rtc_get_min();
 		tinfo.tm_sec = rtc_get_sec();
 		
-		printf("Week Day:%i\n",tinfo.tm_wday);
-		printf("Day:%i\n",tinfo.tm_mday);
-		printf("Month:%i\n",tinfo.tm_mon);
-		printf("Year:%i\n",tinfo.tm_year);
+		printf("Current Week Day:%i\n",tinfo.tm_wday);
+		printf("Current Day:%i\n",tinfo.tm_mday);
+		printf("Current Month:%i\n",tinfo.tm_mon);
+		printf("current Year:%i\n",tinfo.tm_year);
 		
 		// Convert struct tm to time_t
-		future = mktime(&tinfo);
+		//future = mktime(&tinfo);
 		
 		/*Save user inputs Days, Duration and Time*/
 		
-		(void)rtc_get_FutureDate_sec(&future);
+		//(void)rtc_get_FutureDate_sec(&future);
+		
+		SET_IrrigationSchedule(true);
 	}
 	
-	SET_IrrigationSchedule(true);
-	
-	start_irrigation_duration_tmr();
+	//start_irrigation_duration_tmr();
 	
 	
 	return 0;

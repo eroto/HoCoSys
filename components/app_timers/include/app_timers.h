@@ -8,16 +8,21 @@
 #ifndef APP_TIMERS_H_
 #define APP_TIMERS_H_
 
-#define NUM_TMRS_HDL	3
-#define NUM_TMRS		3
+#include <stdint.h>
+#define NUM_TMRS_HDL	2
+#define NUM_TMRS		2
 
-bool Alarm_flag = 0;
+typedef struct
+{
+	char *irrigation_days;
+	char *irrigation_time;
+	char *irrigation_duration;
+}s_IrrigationInfo_t;
 
 enum {
 	IRRIGATION_DURATION_TMR,
 	IRRIGATION_TIME_TMR,
-	IRRIGATION_PERIOD_TMR,
-	IRRIGATION_MAX_TMR,
+	IRRIGATION_MAX_TMR
 };
 
 typedef enum {
@@ -30,16 +35,22 @@ typedef enum {
 
 uint8_t app_timers_init(void);
 uint8_t start_irrigation_duration_tmr(void);
+uint8_t start_irrigation_tmr(int seconds);
 bool app_timer_is_running(gptimer_handle_t app_timer);
 uint8_t stop_irrigation_duration_tmr(void);
 static bool irrigation_duration_alarm_cb(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx);
 bool GET_IrrigationSchedule(void);
+bool GET_IrrigationTimeCalc(void);
 void SET_IrrigationSchedule(bool value);
-uint8_t splitDays(const char *input);
-uint8_t irrigation_task();
+void SET_IrrigationTimeCalc(bool value);
+uint8_t app_timers_ConvertDays(const char *input);
+void irrigation_task(void *pvParameters);
 void splitHrsMin(char * t_m);
 void Set_NumOfIrrigationDays(uint8_t days);
 uint8_t Get_NumOfIrrigationDays(void);
+bool GET_Irrigation_Alarm_flag(void);
+void SET_Irrigation_Alarm_flag(bool value);
+void app_timer_startIrrigationTask(s_IrrigationInfo_t* UserInfo);
 
 
 #endif /* APP_TIMERS_H_ */

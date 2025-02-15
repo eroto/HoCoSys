@@ -21,7 +21,7 @@
 #include "sense_if.h"
 #include "I2C_if.h"
 #include "esp_blufi_api.h"
-#include "app_timer_if.h"
+#include "app_timers.h"
 #include "blufi_if.h"
 #include "apptask.h"
 //#include "apptask_if.h"
@@ -37,6 +37,9 @@ char UserInput = 0;
 uint8_t trigger = 1;
 QueueHandle_t xQueue;
 ts_BLEMsg lReceivedValue;
+QueueHandle_t xIrrigationQueue;
+
+s_IrrigationInfo_t *UsrInputFromConsola;
 
 typedef struct
 {
@@ -56,6 +59,7 @@ void apptask_init(void)
 //	xTaskCreate(i2c_test_task, "i2c_test_task_1", 1024 * 2, (void *)1, 10, NULL);
 
 	xQueue = xQueueCreate( 2, sizeof(ts_BLEMsg) );
+	xIrrigationQueue = xQueueCreate(2, sizeof(struct UsrInputFromConsola *));
 
 	TaskHandle5ms = xTaskCreateStaticPinnedToCore(
 								  apptask_5ms,
@@ -140,7 +144,7 @@ void apptask_5ms(void *pvParameters )
 	for( ;; )
 	{
 		vTaskDelayUntil( &xLastWakeTime, xPeriod_5 );
-		/* Task code goes here. */
+		/* Check for a message */
 		if( uxQueueMessagesWaiting( xQueue ) != 0 )
 		{
 			ESP_LOGI(TAG, "Queue should have been empty!\r\n");
@@ -153,12 +157,11 @@ void apptask_5ms(void *pvParameters )
 			}
 		}
 		/*Irrigation timer alarm flag*/
-		if (Alarm_flag == 1)
+		if (GET_Irrigation_Alarm_flag() == 1)
 		{
-			Alarm_flag = 0;
+			SET_Irrigation_Alarm_flag(0);
 			printf("Irrigation Alarm completed\n");
 		}
-
 	}
 }
 
@@ -211,6 +214,7 @@ void apptask_100ms(void *pvParameters )
 {
 	TickType_t xLastWakeTime;
 	const TickType_t xPeriod_100 = pdMS_TO_TICKS(TASK_PERIOD_100);
+	BaseType_t xStatus = 0;
 
 	xLastWakeTime = xTaskGetTickCount();
 
@@ -218,7 +222,25 @@ void apptask_100ms(void *pvParameters )
 	{
 		vTaskDelayUntil( &xLastWakeTime, xPeriod_100 );
 		/* Task code goes here. */
-
+		/* Check for a message */
+		if(xIrrigationQueue != 0)
+		{
+			if( uxQueueMessagesWaiting( xIrrigationQueue ) != 0 )
+			{			
+				xStatus = xQueueReceive( xIrrigationQueue, &(UsrInputFromConsola), ( TickType_t )5);
+				if(xStatus)
+				{
+					printf("\nDays:%s\n",UsrInputFromConsola->irrigation_days);
+					printf("Time:%s\n",UsrInputFromConsola->irrigation_time);
+					printf("Duration:%s\n",UsrInputFromConsola->irrigation_duration);
+					
+					app_timer_startIrrigationTask(UsrInputFromConsola);
+					printf("Irrigation Task started\n");
+				}
+			}	
+		}
+		
+		//irrigation_task();
 	}
 }
 
@@ -240,8 +262,6 @@ void apptask_500ms(void *pvParameters )
 		for(;;)
 		{
 			led_ConnIndicator();
-			
-			irrigation_task();
 
 			if (count_1Sec == 2)
 			{

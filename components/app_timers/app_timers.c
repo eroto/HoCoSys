@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -55,9 +56,12 @@ typedef struct
 typedef enum
 {
 	WAITING_USER_INPUT,
+	CHECK_DAY,
+	WAIT_FOR_NEXT_DAY,
 	CALC_SECONDS,
 	SET_TIMER,
 	IDLE,
+	SLEEP,
 	MAX_IRR_STATE
 }e_irrigation_states;
 
@@ -269,60 +273,108 @@ uint8_t Get_NumOfIrrigationDays(void)
 }
 
 
-void irrigation_task(void* pvParameters )
+void irrigation_task(void)
 {	
-	static int C_weekDay = 0;
-	static int C_hr = 0;
-	static int C_min = 0;
-	static int C_seg = 0;
-	static int T_weekDay = 0;
-	static int T_hr = 0;
-	static int T_min = 0;
-	static int seconds_to_irrigation = 0;
+	static uint8_t C_weekDay = 0;
+	static uint8_t C_hr = 0;
+	static uint8_t C_min = 0;
+	static uint8_t C_seg = 0;
+	static uint8_t T_weekDay = 0;
+	static uint8_t T_hr = 0;
+	static uint8_t T_min = 0;
+	static uint32_t seconds_to_irrigation = 0;
 	uint8_t num_of_days = 0;
-	int time = 0;
+	uint32_t time = 0;
 	uint8_t i = 0;
-	int duration = 0;
+	uint8_t duration = 0;
+	static uint32_t NextDayTime = 0;
 	e_irrigation_states nextstate = MAX_IRR_STATE;
 	//int weekday = 0;
-	
-	while(1)
-	{
-		//esp_task_wdt_reset();
 		
 	switch(irrigation_task_states)
 	{
 	case WAITING_USER_INPUT:
-		//esp_task_wdt_reset();
 		if (GET_IrrigationSchedule())
 		{
-			/*get current day and time*/
-			printf("Get Current day and time\n");		 
+			/*get current day*/
+			printf("Irrigation Schedule set, get current day and time\n");		 
 			 C_weekDay = rtc_get_WeekDay();
-			 C_hr = rtc_get_hour();
-			 C_min = rtc_get_min();
-			 C_seg = rtc_get_sec();
-			 T_hr = irrigation_hr;
-			 T_min = irrigation_min;
+			 //C_hr = rtc_get_hour();
+			 //C_min = rtc_get_min();
+			 //C_seg = rtc_get_sec();
+			 //T_hr = irrigation_hr;
+			 //T_min = irrigation_min;
 			 
-			 num_of_days = app_timers_ConvertDays(IrrigationInfoReceived.irrigation_days);
-			 Set_NumOfIrrigationDays(num_of_days);
+			 app_timers_Fill_IrrigationArray(IrrigationInfoReceived.irrigation_days,Days_to_Irrigate);
+			 //Set_NumOfIrrigationDays(num_of_days);
 			 splitHrsMin(IrrigationInfoReceived.irrigation_time);
 			 duration = atoi(IrrigationInfoReceived.irrigation_duration);		 
-			 nextstate = CALC_SECONDS;
+			 nextstate = CHECK_DAY;
 		 }
 		 else
 		 {
-			printf("Waiting Get Current day and time\n");
 			nextstate = WAITING_USER_INPUT;
 		 }
+	break;
+	
+	case CHECK_DAY:
+		if(Days_to_Irrigate[C_weekDay] == true) //Is today the day?
+		{
+			C_hr = rtc_get_hour();
+			T_hr = irrigation_hr;
+			C_min = rtc_get_min();
+			C_seg = rtc_get_sec();				
+			T_min = irrigation_min;
+			
+			if(T_hr > C_hr)
+			{	
+				seconds_to_irrigation = ((((((T_hr - C_hr) * MINUTOS) - C_min) + T_min)*SEGUNDOS)- C_seg);
+				nextstate = SET_TIMER;
+			}
+			else if(T_hr == C_hr)
+			{
+				if (T_min > C_min)
+				{
+					seconds_to_irrigation = ((T_min - C_min) * SEGUNDOS)- C_seg;
+					nextstate = SET_TIMER;
+				}
+				else/*Irrigation time expired*/
+				{nextstate = IDLE;}
+			}
+			else/*Irrigation time expired*/
+			{nextstate = IDLE;}
+		}
+		else/*Current day not in the irrigation list*/
+		{nextstate = IDLE;}
+		printf("seconds_to_irrigation: %ld \n", seconds_to_irrigation);
+		
+	break;
+	
+	case WAIT_FOR_NEXT_DAY:
+		/*Current day set to irrigate, Set a timer to check tomorro */
+		C_hr = rtc_get_hour();
+		C_min = rtc_get_min();
+		C_seg = rtc_get_sec();
+		
+		NextDayTime = (((((24 - C_hr) * MINUTOS) - C_min)* SEGUNDOS) - C_seg);
+		time = NextDayTime * 1500;  
+		start_irrigation_tmr(time);
+		SET_IrrigationTimeCalc(false); 
+		SET_IrrigationSchedule(false);
+		printf("Go to sleep and check for next day");
+		nextstate = SLEEP;
+		
+	break;
+	
+	case SLEEP:
+		/*Go to sleep, waiting for next day alarm*/
+		nextstate = IDLE;
 	break;
 	
 	case CALC_SECONDS:
 		for(i = 0; i < NumOfIrrigationDays; i++)
 		 {
 			 printf("Calculating seconds, loop:%i\n",i);
-			 esp_task_wdt_reset();
 			 T_weekDay = days[i];/*Get the irrigation Target day from the user*/
 			
 			 /*Irrigation day selected is the same as the currenty day*/
@@ -371,7 +423,7 @@ void irrigation_task(void* pvParameters )
 			 }
 		 }
 		
-		printf("seconds_to_irrigation: %i\n", seconds_to_irrigation);
+		
 		SET_IrrigationTimeCalc(true); 
 		nextstate = SET_TIMER;
 	break;
@@ -382,7 +434,7 @@ void irrigation_task(void* pvParameters )
 	SET_IrrigationTimeCalc(true); 
 	SET_IrrigationSchedule(false);
 	nextstate = IDLE;
-	printf("SET_TIMER: Irrigation timer set to:%i",time);
+	printf("SET_TIMER: Irrigation timer set to: %ld\n",time);
 	break;
 	
 	case IDLE:
@@ -390,97 +442,23 @@ void irrigation_task(void* pvParameters )
 	{nextstate = IDLE;}
 	else
 	{nextstate = WAITING_USER_INPUT;}
-	printf("IDLE Deleting Task");
-	vTaskDelete(HandlerIrrigationTask);
 	break;
 	
-	case MAX_IRR_STATE:
-	printf("MAX_IRR_STATE Deleting Task");
-	vTaskDelete(HandlerIrrigationTask);
-	break;
-	
+	case MAX_IRR_STATE:	
 	default:
-	printf("Default Deleting Task");
-	vTaskDelete(HandlerIrrigationTask);
+	nextstate = WAITING_USER_INPUT;
 	break;
 	}
 	
 	irrigation_task_states = nextstate;
-	}
-	/*
-	if (GET_IrrigationSchedule())
-	{
-		//get current day and time		 
-		 C_weekDay = rtc_get_WeekDay();
-		 C_hr = rtc_get_hour();
-		 C_min = rtc_get_min();
-		 C_seg = rtc_get_sec();
-		 T_hr = irrigation_hr;
-		 T_min = irrigation_min;
-		 
-		 for(i = 0; i < NumOfIrrigationDays; i++)
-		 {
-			 T_weekDay = days[i];//Get the irrigation Target day from the user
-			
-			 //Irrigation day selected is the same as the currenty day
-			 if(T_weekDay == C_weekDay)
-			 {
-				if (T_hr == C_hr)//Hour selected to irrigate is the same as the current hour
-				{
-					if(T_min > C_min)
-					{
-						//Calculate seconds to irrigation
-						seconds_to_irrigation = ((T_min - C_min)*SEGUNDOS)- C_seg;
-					}
-					else if(T_min == C_min)
-					{seconds_to_irrigation = 1;}
-					
-					else
-					{
-						if(NumOfIrrigationDays == 1) //Are there more days to check?
-						{seconds_to_irrigation = (((((((((7 - C_weekDay) + T_weekDay) * HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;}
-						//else Go for to the next day programmed
-					}
-				}
-				else if(T_hr > C_hr)//Hour selected to irritate is greater than current hour
-				{
-					seconds_to_irrigation = ((((((T_hr - C_hr) * MINUTOS) - C_min) + T_min)*SEGUNDOS)- C_seg);
-				}
-				else//Target hour is less than current hour, that means time passed and next day shall be checked and time recalculated
-				{
-					if(NumOfIrrigationDays == 1)//Are there more days to check?
-					{
-						seconds_to_irrigation = (((((((((7 - C_weekDay) + T_weekDay) * HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;
-					}
-					// Else Go for to the next day programmed
-				}
-			 }
-			 //Irrigation day selected is less than current day
-			 else if(T_weekDay < C_weekDay)
-			 {
-				if(NumOfIrrigationDays == 1)//Are there more days to check?
-				{seconds_to_irrigation = (((((((((7 - C_weekDay) + T_weekDay) * HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;}
-			 	//else Go for the next day programmed
-			 }
-			 else//Irrigation day selected is grater then current day
-			 {seconds_to_irrigation = ((((((((T_weekDay - C_weekDay)* HORAS) - C_hr) + T_hr) * MINUTOS) - C_min) + T_min) * SEGUNDOS) - C_seg;}
-		 }
-		
-		printf("seconds_to_irrigation: %i", seconds_to_irrigation);
-		SET_IrrigationTimeCalc(true); 
-	}
-	else 
-	{// do nothing irrigation schedule not set}
-	*/
+	
 }
 
 
-uint8_t app_timers_ConvertDays(const char *input)
+void app_timers_Fill_IrrigationArray(const char *input, uint8_t *IrrigationArray)
 {
-	int j = 0;
-	int i = 0;
 	uint8_t count = 0;
-	for (i = 0; input[i] != '\0'; i++)
+	for (uint8_t i = 0; input[i] != '\0'; i++)
 	{
 		/*There is not user input validity check "LMIJVSD"
 		since the input will be limited by the UI input*/
@@ -488,39 +466,25 @@ uint8_t app_timers_ConvertDays(const char *input)
 		{
 			switch(input[i])
 			{
-				case 'L':
-					days[j++]= MONDAY;
-					count++;
+				case 'L': IrrigationArray[0] = true;
 				break;
 				
-				case 'M':
-					days[j++]=TUESDAY;
-					count++;
+				case 'M': IrrigationArray[1] = true;
 				break;
 				
-				case 'I':
-					days[j++]=WEDNESDAY;
-					count++;
+				case 'I': IrrigationArray[2] = true;
 				break;
 				
-				case 'J':
-					days[j++]=THURSDAY;
-					count++;
+				case 'J': IrrigationArray[3] = true;
 				break;
 				
-				case 'V':
-					days[j++]= FRIDAY;
-					count++;
+				case 'V': IrrigationArray[4] = true;
 				break;
 				
-				case 'S':
-					days[j++]= SATURDAY;
-					count++;
+				case 'S': IrrigationArray[5] = true;
 				break;
 				
-				case 'D':
-					days[j++]= SUNDAY;
-					count++;
+				case 'D': IrrigationArray[6] = true;
 				break;
 				
 				default:
@@ -529,13 +493,6 @@ uint8_t app_timers_ConvertDays(const char *input)
 			}
 		}
 	}
-
-	for(uint8_t i = 0; i < count; i++)
-	{
-		printf("Day %i: %i\n",i, days[i]);
-	}
-			
-	return count;
 }
 
 void splitHrsMin(char * t_m)
@@ -556,11 +513,8 @@ void SET_Irrigation_Alarm_flag(bool value)
 	Irrigation_Alarm_flag = value;
 }
 
-void app_timer_startIrrigationTask(s_IrrigationInfo_t* UserInfo)
+void app_timer_copy_UsrInput(s_IrrigationInfo_t* UserInfo)
 {
-	
-	//memcpy((void *) &IrrigationInfoReceived, (const void *) UserInfo, sizeof(UserInfo));
-	
 	IrrigationInfoReceived.irrigation_days = UserInfo->irrigation_days;
 	IrrigationInfoReceived.irrigation_time = UserInfo->irrigation_time;
 	IrrigationInfoReceived.irrigation_duration = UserInfo->irrigation_duration;
@@ -568,12 +522,20 @@ void app_timer_startIrrigationTask(s_IrrigationInfo_t* UserInfo)
 	printf("Days:%s\n",IrrigationInfoReceived.irrigation_days);
 	printf("Time:%s\n",IrrigationInfoReceived.irrigation_time);
 	printf("Duration:%s\n",IrrigationInfoReceived.irrigation_duration);
-	xTaskCreate(irrigation_task,
+}
+
+void app_timer_startIrrigationTask(void)
+{
+	
+	//memcpy((void *) &IrrigationInfoReceived, (const void *) UserInfo, sizeof(UserInfo));
+	
+
+	/*xTaskCreate(irrigation_task,
 						  "Irrigation_Task",
 						  IRRIGATION_TASK_STACK_SIZE,
 						  (void *)UserInfo,
 						  2,
-						  &HandlerIrrigationTask);
+						  &HandlerIrrigationTask);*/
 						  
 	esp_task_wdt_add(HandlerIrrigationTask);
 }

@@ -234,13 +234,16 @@ void apptask_100ms(void *pvParameters )
 					printf("Time:%s\n",UsrInputFromConsola->irrigation_time);
 					printf("Duration:%s\n",UsrInputFromConsola->irrigation_duration);
 					
-					app_timer_startIrrigationTask(UsrInputFromConsola);
-					printf("Irrigation Task started\n");
+					app_timer_copy_UsrInput(UsrInputFromConsola);
+					
+					SET_IrrigationTimeCalc(false);
+					//app_timer_startIrrigationTask(UsrInputFromConsola);
+					//printf("Irrigation Task started\n");
 				}
 			}	
 		}
 		
-		//irrigation_task();
+		irrigation_task();
 	}
 }
 

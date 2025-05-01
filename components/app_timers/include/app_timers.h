@@ -43,14 +43,15 @@ bool GET_IrrigationSchedule(void);
 bool GET_IrrigationTimeCalc(void);
 void SET_IrrigationSchedule(bool value);
 void SET_IrrigationTimeCalc(bool value);
-uint8_t app_timers_ConvertDays(const char *input);
-void irrigation_task(void *pvParameters);
+void app_timers_Fill_IrrigationArray(const char *input,uint8_t *IrrigationArray);
+void app_timer_copy_UsrInput(s_IrrigationInfo_t* UserInfo);
+void irrigation_task(void);
 void splitHrsMin(char * t_m);
 void Set_NumOfIrrigationDays(uint8_t days);
 uint8_t Get_NumOfIrrigationDays(void);
 bool GET_Irrigation_Alarm_flag(void);
 void SET_Irrigation_Alarm_flag(bool value);
-void app_timer_startIrrigationTask(s_IrrigationInfo_t* UserInfo);
+void app_timer_startIrrigationTask(void);
 
 
 #endif /* APP_TIMERS_H_ */

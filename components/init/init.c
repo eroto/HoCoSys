@@ -17,6 +17,7 @@
 #include "blufi_if.h"
 #include "consola_if.h"
 #include "app_timer_if.h"
+#include "PwrMngr.h"
 #include "init.h"
 
 //uint8_t s_led_state = 0;
@@ -131,6 +132,8 @@ uint8_t appinit2(void)
 	consola_Init();
 	
 	app_timers_init();
+	
+	PwrMngr_Init();
 
 	uint8_t result = 0;
 

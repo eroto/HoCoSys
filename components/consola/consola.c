@@ -115,7 +115,7 @@ static int settmr(int argc, char **argv)
 	        	printf( "Could not send to the irrigation queue.\r\n" );
 	        }
         }
-		SET_IrrigationTimeCalc(false);
+		//SET_IrrigationTimeCalc(false);
 		
 		// Print all the arguments
 		//num_of_days = splitDays(argv[1]);

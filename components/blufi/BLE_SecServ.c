@@ -359,7 +359,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
             break;
         case ESP_GATTS_WRITE_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_WRITE_EVT, write value:");
-            esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
+            ESP_LOGI(GATTS_TABLE_TAG, "GATT WRITE, handle: 0x%x, len: %d", param->write.handle, param->write.len);
+            esp_log_buffer_hex(TAG, param->write.value, param->write.len);
             break;
         case ESP_GATTS_EXEC_WRITE_EVT:
             break;

@@ -31,6 +31,8 @@
 //static uint16_t profile_handle_table[BLUFI_IDX_NB];
 static uint16_t blufi_handle_table[BLUFI_IDX_NB];
 
+static const char *TAG = "LOG BUFFER HEX";
+
 static uint8_t ext_adv_raw_data[] = {
         0x02, 0x01, 0x06,
         0x02, 0x0a, 0xeb, 0x03, 0x03, 0xab, 0xcd,

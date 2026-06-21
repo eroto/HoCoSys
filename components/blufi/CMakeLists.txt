@@ -1,9 +1,8 @@
-idf_component_register(SRCS "blufi.c"
+idf_component_register(SRCS "BLE_SecServ.c" "blufi.c"
                             "blufi_security.c"
                             "blufi_init.c"
                     INCLUDE_DIRS "include"
                     REQUIRES driver
-                    
                     REQUIRES mbedtls
                     REQUIRES freertos
                     REQUIRES esp_wifi

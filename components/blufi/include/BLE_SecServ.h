@@ -14,7 +14,7 @@
 #include "esp_bt_main.h"
 
 /* Attributes State Machine */
-enum
+/*enum
 {
     IDX_SVC,
     IDX_CHAR_A,
@@ -28,6 +28,22 @@ enum
     IDX_CHAR_VAL_C,
 
     HRS_IDX_NB,
+};*/
+
+enum {
+    BLUFI_IDX_SVC,
+
+    BLUFI_IDX_CHAR_A,
+    BLUFI_IDX_CHAR_VAL_A,
+    BLUFI_IDX_CHAR_CFG_A,
+    
+    BLUFI_IDX_CHAR_B,
+    BLUFI_IDX_CHAR_VAL_B,
+
+    BLUFI_IDX_CHAR_C,
+    BLUFI_IDX_CHAR_VAL_C,
+
+    BLUFI_IDX_NB,
 };
 
 

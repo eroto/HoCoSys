@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
-#include "esp_task_wdt.h"
 #include "freertos/FreeRTOS.h"
+#include "esp_task_wdt.h"
 #include "driver/gptimer.h"
 #include "rtc_if.h"
 #include "app_timers.h"

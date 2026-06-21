@@ -12,6 +12,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_bt.h"
+#include "BLE_SecServ.h"
 
 
 #define GATTS_TABLE_TAG "SEC_GATTS_DEMO"
@@ -27,7 +28,8 @@
 
 #define GATTS_DEMO_CHAR_VAL_LEN_MAX               0x40
 
-static uint16_t profile_handle_table[HRS_IDX_NB];
+//static uint16_t profile_handle_table[BLUFI_IDX_NB];
+static uint16_t blufi_handle_table[BLUFI_IDX_NB];
 
 static uint8_t ext_adv_raw_data[] = {
         0x02, 0x01, 0x06,
@@ -90,7 +92,7 @@ static const uint16_t GATTS_CHAR_UUID_TEST_C       = 0xFF03;
 static const uint16_t primary_service_uuid         = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid   = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
-static const uint8_t char_prop_read                =  ESP_GATT_CHAR_PROP_BIT_READ;
+static const uint8_t char_prop_read                = ESP_GATT_CHAR_PROP_BIT_READ;
 static const uint8_t char_prop_write               = ESP_GATT_CHAR_PROP_BIT_WRITE;
 static const uint8_t char_prop_read_write_notify   = ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
 static const uint8_t heart_measurement_ccc[2]      = {0x00, 0x00};
@@ -100,45 +102,45 @@ static const uint8_t char_value[4]                 = {0x11, 0x22, 0x33, 0x44};
 
 
 /* Full Database Description - Used to add attributes into the database */
-static const esp_gatts_attr_db_t gatt_db[HRS_IDX_NB] =
+static const esp_gatts_attr_db_t gatt_db[BLUFI_IDX_NB] =
 {
     // Service Declaration
-    [IDX_SVC]        =
+    [BLUFI_IDX_SVC]        =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&primary_service_uuid, ESP_GATT_PERM_READ,
       sizeof(uint16_t), sizeof(GATTS_SERVICE_UUID_TEST), (uint8_t *)&GATTS_SERVICE_UUID_TEST}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_A]     =
+    [BLUFI_IDX_CHAR_A]     =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read_write_notify}},
 
     /* Characteristic Value */
-    [IDX_CHAR_VAL_A] =
+    [BLUFI_IDX_CHAR_VAL_A] =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_A, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
     /* Client Characteristic Configuration Descriptor */
-    [IDX_CHAR_CFG_A]  =
+    [BLUFI_IDX_CHAR_CFG_A]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_client_config_uuid, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       sizeof(uint16_t), sizeof(heart_measurement_ccc), (uint8_t *)heart_measurement_ccc}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_B]      =
+    [BLUFI_IDX_CHAR_B]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_read}},
 
     /* Characteristic Value */
-    [IDX_CHAR_VAL_B]  =
+    [BLUFI_IDX_CHAR_VAL_B]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_B, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
     /* Characteristic Declaration */
-    [IDX_CHAR_C]      =
+    [BLUFI_IDX_CHAR_C]      =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&character_declaration_uuid, ESP_GATT_PERM_READ,
       CHAR_DECLARATION_SIZE, CHAR_DECLARATION_SIZE, (uint8_t *)&char_prop_write}},
 
     /* Characteristic Value */
-    [IDX_CHAR_VAL_C]  =
+    [BLUFI_IDX_CHAR_VAL_C]  =
     {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_C, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, sizeof(char_value), (uint8_t *)char_value}},
 
@@ -228,7 +230,7 @@ static void show_bonded_devices(void)
     esp_ble_get_bond_device_list(&dev_num, dev_list);
     ESP_LOGI(GATTS_TABLE_TAG, "Bonded devices number : %d", dev_num);
     for (int i = 0; i < dev_num; i++) {
-        esp_log_buffer_hex(GATTS_TABLE_TAG, (void *)dev_list[i].bd_addr, sizeof(esp_bd_addr_t));
+        ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG, (void *)dev_list[i].bd_addr, sizeof(esp_bd_addr_t));
     }
 
     free(dev_list);
@@ -322,7 +324,7 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
         ESP_LOGD(GATTS_TABLE_TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV_COMPLETE_EVT status = %d", param->remove_bond_dev_cmpl.status);
         ESP_LOGI(GATTS_TABLE_TAG, "ESP_GAP_BLE_REMOVE_BOND_DEV");
         ESP_LOGI(GATTS_TABLE_TAG, "-----ESP_GAP_BLE_REMOVE_BOND_DEV----");
-        esp_log_buffer_hex(GATTS_TABLE_TAG, (void *)param->remove_bond_dev_cmpl.bd_addr, sizeof(esp_bd_addr_t));
+        ESP_LOG_BUFFER_HEX(GATTS_TABLE_TAG, (void *)param->remove_bond_dev_cmpl.bd_addr, sizeof(esp_bd_addr_t));
         ESP_LOGI(GATTS_TABLE_TAG, "------------------------------------");
         break;
     }
@@ -350,9 +352,11 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
     switch (event) {
         case ESP_GATTS_REG_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_REG_EVT");
+            //ESP_LOGI(GATTS_TABLE_TAG, "GATT WRITE, handle: 0x%x, len: %d, value:", param->write.handle, param->write.len);
+            //esp_log_buffer_hex(GATTS_TABLE_TAG, param->write.value, param->write.len);
             //generate a resolvable random address
             esp_ble_gap_config_local_privacy(true);
-            esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, HRS_IDX_NB, SVC_INST_ID);
+            esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, BLUFI_IDX_NB, SVC_INST_ID);
             break;
         case ESP_GATTS_READ_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_READ_EVT");
@@ -360,7 +364,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         case ESP_GATTS_WRITE_EVT:
             ESP_LOGI(GATTS_TABLE_TAG, "ESP_GATTS_WRITE_EVT, write value:");
             ESP_LOGI(GATTS_TABLE_TAG, "GATT WRITE, handle: 0x%x, len: %d", param->write.handle, param->write.len);
-            esp_log_buffer_hex(TAG, param->write.value, param->write.len);
+            ESP_LOG_BUFFER_HEX(TAG, param->write.value, param->write.len);
             break;
         case ESP_GATTS_EXEC_WRITE_EVT:
             break;
@@ -399,13 +403,12 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         case ESP_GATTS_CREAT_ATTR_TAB_EVT: {
             ESP_LOGI(GATTS_TABLE_TAG, "The number handle = %x",param->add_attr_tab.num_handle);
             if (param->create.status == ESP_GATT_OK){
-                if(param->add_attr_tab.num_handle == HRS_IDX_NB) {
-                    memcpy(profile_handle_table, param->add_attr_tab.handles,
-                    sizeof(profile_handle_table));
-                   esp_ble_gatts_start_service(profile_handle_table[IDX_SVC]);
+                if(param->add_attr_tab.num_handle == BLUFI_IDX_NB) {
+                    memcpy(blufi_handle_table, param->add_attr_tab.handles, sizeof(blufi_handle_table));
+                   esp_ble_gatts_start_service(blufi_handle_table[BLUFI_IDX_SVC]);
                 }else{
-                    ESP_LOGE(GATTS_TABLE_TAG, "Create attribute table abnormally, num_handle (%d) doesn't equal to HRS_IDX_NB(%d)",
-                         param->add_attr_tab.num_handle, HRS_IDX_NB);
+                    ESP_LOGE(GATTS_TABLE_TAG, "Create attribute table abnormally, num_handle (%d) doesn't equal to BLUFI_IDX_NB(%d)",
+                         param->add_attr_tab.num_handle, BLUFI_IDX_NB);
                 }
             }else{
                 ESP_LOGE(GATTS_TABLE_TAG, " Create attribute table failed, error code = %x", param->create.status);
@@ -419,7 +422,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
 }
 
 
-/*static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
+static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if,
                                 esp_ble_gatts_cb_param_t *param)
 {
     // If event is register event, store the gatts_if for each profile
@@ -445,7 +448,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
             }
         }
     } while (0);
-}*/
+}
 
 void app_main(void)
 {

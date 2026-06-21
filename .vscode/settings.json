@@ -1,0 +1,10 @@
+{
+  "idf.currentSetup": "C:\\Users\\enriq\\esp\\v5.5\\esp-idf",
+  "idf.customExtraVars": {},
+  "clangd.path": "C:\\Users\\enriq\\.espressif\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=c:\\Users\\enriq\\Projects\\HoCoSys\\build"
+  ]
+}
